@@ -1,0 +1,6 @@
+*.[oad]
+server/bin
+server/comm/bin
+server/.deb
+server/comm/.deb
+*.class
