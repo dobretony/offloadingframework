@@ -5,7 +5,7 @@
 
 int main()
 {
-
+	bluetooth_init();
 
 	return 0;
 }
