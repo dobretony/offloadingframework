@@ -1,25 +1,11 @@
-#include <stdio.h>
-#include <errno.h>
-#include <ctype.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <getopt.h>
-#include <sys/param.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <signal.h>
-
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
+#include "bluetooth.h"
 
 int dev_id = -1;
-//static struct hci_dev_info di;
+struct hci_dev_info di;
+int dev_ctl = -1;
 
 
-static int dev_info(int s, int dev_id, long arg)
+static int dev_info(int s, int dev_id)
 {
         struct hci_dev_info di = { .dev_id = dev_id };
         char addr[18];
@@ -38,14 +24,27 @@ static int dev_info(int s, int dev_id, long arg)
 int bluetooth_init()
 {
 	int opt, ctl, i, cmd = 0;
+	char* command;
+
 	/* Open HCI socket - check to see if bluetooth exists. */
         if ((ctl = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) < 0) {
                 perror("Can't open HCI socket.");
                 exit(1);
         }
 
+	dev_ctl = ctl;
 	dev_id = get_dev_id(ctl);
-	printf("%i ", dev_id);
+	printf("Succesfully found a Bluetooth Interface:\n");
+	dev_info(ctl, dev_id);
+	
+	//reset the interface in order to make sure it is on and stable
+	bring_down(ctl, dev_id);
+	bring_up(ctl, dev_id);
+	printf("Succesfully restarted the interface.\n");
+
+	//configure the advertisment packets that identify this server
+	set_adv_packet(dev_id, ADVERTISING_PACKET);
+	printf("Succesfully set the Advertising data to %s.\n", ADVERTISING_PACKET);
 
 }
 
@@ -55,7 +54,6 @@ int get_dev_id(int ctl)
 	struct hci_dev_list_req *dl;
         struct hci_dev_req *dr;
         int i;
-	struct hci_dev_info di;
 
         if (!(dl = malloc(HCI_MAX_DEV * sizeof(struct hci_dev_req) +
                 sizeof(uint16_t)))) {
@@ -86,10 +84,113 @@ int get_dev_id(int ctl)
 }
 
 
-/*This should be started on a different thread. Always send adveritising packets.*/
-int bluetooth_adv_loop()
+int bluetooth_adv_start(int ctl, int hdev)
 {
+	struct hci_request rq;
+	le_set_advertise_enable_cp advertise_cp;
+	le_set_advertising_parameters_cp adv_params_cp;
+	uint8_t status;
+	int dd, ret;
 
+	if (hdev < 0)
+		hdev = hci_get_route(NULL);
+
+	dd = hci_open_dev(hdev);
+	if (dd < 0) {
+		perror("Could not open device");
+		exit(1);
+	}
+
+	memset(&adv_params_cp, 0, sizeof(adv_params_cp));
+	adv_params_cp.min_interval = htobs(0x0800);
+	adv_params_cp.max_interval = htobs(0x0800);
+	adv_params_cp.advtype = atoi("0");
+	adv_params_cp.chan_map = 7;
+
+	memset(&rq, 0, sizeof(rq));
+	rq.ogf = OGF_LE_CTL;
+	rq.ocf = OCF_LE_SET_ADVERTISING_PARAMETERS;
+	rq.cparam = &adv_params_cp;
+	rq.clen = LE_SET_ADVERTISING_PARAMETERS_CP_SIZE;
+	rq.rparam = &status;
+	rq.rlen = 1;
+
+	ret = hci_send_req(dd, &rq, 1000);
+	if (ret < 0)
+		goto done;
+
+	memset(&advertise_cp, 0, sizeof(advertise_cp));
+	advertise_cp.enable = 0x01;
+
+	memset(&rq, 0, sizeof(rq));
+	rq.ogf = OGF_LE_CTL;
+	rq.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
+	rq.cparam = &advertise_cp;
+	rq.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
+	rq.rparam = &status;
+	rq.rlen = 1;
+
+	ret = hci_send_req(dd, &rq, 1000);
+
+done:
+	hci_close_dev(dd);
+
+	if (ret < 0) {
+		fprintf(stderr, "Can't set advertise mode on hci%d: %s (%d)\n",
+						hdev, strerror(errno), errno);
+		exit(1);
+	}
+
+	if (status) {
+		fprintf(stderr,
+			"LE set advertise enable on hci%d returned status %d\n",
+								hdev, status);
+		exit(1);
+	}
+
+}
+
+int bluetooth_adv_stop(int ctl, int hdev)
+{
+	struct hci_request rq;
+	le_set_advertise_enable_cp advertise_cp;
+	uint8_t status;
+	int dd, ret;
+
+	if (hdev < 0)
+		hdev = hci_get_route(NULL);
+
+	dd = hci_open_dev(hdev);
+	if (dd < 0) {
+		perror("Could not open device");
+		exit(1);
+	}
+
+	memset(&advertise_cp, 0, sizeof(advertise_cp));
+
+	memset(&rq, 0, sizeof(rq));
+	rq.ogf = OGF_LE_CTL;
+	rq.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
+	rq.cparam = &advertise_cp;
+	rq.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
+	rq.rparam = &status;
+	rq.rlen = 1;
+
+	ret = hci_send_req(dd, &rq, 1000);
+
+	hci_close_dev(dd);
+
+	if (ret < 0) {
+		fprintf(stderr, "Can't set advertise mode on hci%d: %s (%d)\n",
+						hdev, strerror(errno), errno);
+		exit(1);
+	}
+
+	if (status) {
+		fprintf(stderr, "LE set advertise enable on hci%d returned status %d\n",
+						hdev, status);
+		exit(1);
+	}
 
 }
 
@@ -102,7 +203,7 @@ int send_adv_package()
 }
 
 
-void cmd_up(int ctl, int hdev, char *opt)
+void bring_up(int ctl, int hdev)
 {
         /* Start HCI device */
         if (ioctl(ctl, HCIDEVUP, hdev) < 0) {
@@ -114,7 +215,7 @@ void cmd_up(int ctl, int hdev, char *opt)
         }
 }
 
-void cmd_down(int ctl, int hdev, char *opt)
+void bring_down(int ctl, int hdev)
 {
         /* Stop HCI device */
         if (ioctl(ctl, HCIDEVDOWN, hdev) < 0) {
@@ -126,37 +227,39 @@ void cmd_down(int ctl, int hdev, char *opt)
 
 /*Send arbitrary hci commands, taken from hcitool.*/
 /*This is used to set the adveritisng data.*/
-void cmd_cmd(int dev_id, int argc, char **argv)
+void set_adv_packet(int dev_id, const char* adv_string)
 {
         unsigned char buf[HCI_MAX_EVENT_SIZE], *ptr = buf;
+	char* token = NULL;
         struct hci_filter flt;
         hci_event_hdr *hdr;
         int i, opt, len, dd;
-        uint16_t ocf;
-        uint8_t ogf;
-
-//        for_each_opt(opt, cmd_options, NULL) {
-//                switch (opt) {
-//                default:
-//                        printf("%s", cmd_help);
-//                        return;
-//                }
-//       }
-//       helper_arg(2, -1, &argc, &argv, cmd_help);
+        uint16_t ocf = 0x0008; // this the advertising command
+        uint8_t ogf = 0x08;
 
         if (dev_id < 0)
                 dev_id = hci_get_route(NULL);
 
-        errno = 0;
-        ogf = strtol(argv[0], NULL, 16);
-        ocf = strtol(argv[1], NULL, 16);
-        if (errno == ERANGE || (ogf > 0x3f) || (ocf > 0x3ff)) {
-//                printf("%s", cmd_help);
+        //errno = 0;
+        //ogf = strtol(argv[0], NULL, 16);
+        //ocf = strtol(argv[1], NULL, 16);
+        if ((ogf > 0x3f) || (ocf > 0x3ff)) {
                 return;
         }
 
-        for (i = 2, len = 0; i < argc && len < (int) sizeof(buf); i++, len++)
-                *ptr++ = (uint8_t) strtol(argv[i], NULL, 16);
+	char* temp;
+	temp = calloc(strlen(adv_string)+1, sizeof(char));
+	strcpy(temp, adv_string);  
+
+	token = strtok(temp, " ");
+
+	while(token){
+		*ptr++ = (uint8_t) strtol(token, NULL, 16);
+		token = strtok(NULL, " ");	
+	}
+
+//        for (i = 2, len = 0; i < argc && len < (int) sizeof(buf); i++, len++)
+//                *ptr++ = (uint8_t) strtol(argv[i], NULL, 16);
 
         dd = hci_open_dev(dev_id);
         if (dd < 0) {
@@ -174,7 +277,6 @@ void cmd_cmd(int dev_id, int argc, char **argv)
         }
 
         printf("< HCI Command: ogf 0x%02x, ocf 0x%04x, plen %d\n", ogf, ocf, len);
-//        hex_dump("  ", 20, buf, len); fflush(stdout);
 
         if (hci_send_cmd(dd, ogf, ocf, len, buf) < 0) {
                 perror("Send failed");
@@ -192,7 +294,6 @@ void cmd_cmd(int dev_id, int argc, char **argv)
         len -= (1 + HCI_EVENT_HDR_SIZE);
 
         printf("> HCI Event: 0x%02x plen %d\n", hdr->evt, hdr->plen);
-//        hex_dump("  ", 20, ptr, len); fflush(stdout);
 
         hci_close_dev(dd);
 }
