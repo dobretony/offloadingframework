@@ -24,7 +24,9 @@ extern int dev_ctl;
 
 
 int bluetooth_init();
+int bluetooth_finalize();
 int get_dev_id(int ctl);
+int init_l2cap_sock(int dev_id);
 int bluetooth_adv_start(int ctl, int hdev);
 int bluetooth_adv_stop(int ctl, int hdev);
 int send_adv_package();

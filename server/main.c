@@ -13,5 +13,7 @@ int main()
 	bluetooth_adv_stop(dev_ctl, dev_id);
 	printf("Stopping advertising...\n");
 
+	bluetooth_finalize();
+
 	return 0;
 }

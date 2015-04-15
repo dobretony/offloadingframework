@@ -1,9 +1,20 @@
 #include "bluetooth.h"
 
+struct sockaddr_l2 {
+	sa_family_t l2_family;
+	unsigned short l2_psm;
+	bdaddr_t l2_bdaddr;
+	unsigned short l2_cid;
+	uint8_t l2_bdaddr_type;
+};
+
+#define ATT_CID 4
+
+
 int dev_id = -1;
 struct hci_dev_info di;
 int dev_ctl = -1;
-
+int l2cap_socket = -1;
 
 static int dev_info(int s, int dev_id)
 {
@@ -46,7 +57,55 @@ int bluetooth_init()
 	set_adv_packet(dev_id, ADVERTISING_PACKET);
 	printf("Succesfully set the Advertising data to %s.\n", ADVERTISING_PACKET);
 
+	//init the l2cap socket that will listen for LE connections
+	init_l2cap_sock(dev_id);	
+
 }
+
+int bluetooth_finalize()
+{
+	bring_down(dev_ctl,dev_id);
+	close(l2cap_socket);
+}
+
+
+int init_l2cap_sock(int dev_id)
+{
+	
+	bdaddr_t daddr;
+
+	l2cap_socket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+	int hci_socket = hci_open_dev(dev_id);
+
+	if(hci_read_bd_addr(hci_socket, &daddr, 1000) == -1){
+		daddr = *BDADDR_ANY;
+	}
+
+	struct sockaddr_l2 sockAddr;
+
+	memset(&sockAddr, 0, sizeof(sockAddr));
+	sockAddr.l2_family = AF_BLUETOOTH;
+	sockAddr.l2_bdaddr = daddr;
+	sockAddr.l2_cid = htobs(ATT_CID);
+	sockAddr.l2_bdaddr_type = BDADDR_LE_PUBLIC;
+
+	int result = bind(l2cap_socket, (struct sockaddr*)&sockAddr, sizeof(sockAddr));
+
+	if(result == -1)
+		printf("Binding L2CAP socket failed.\n");
+	else
+		printf("Successfuly binded L2CAP address.\n");
+
+
+}
+
+
+int start_l2cap_listen()
+{
+
+
+}
+
 
 
 int get_dev_id(int ctl)
