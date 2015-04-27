@@ -1,0 +1,13 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Background}{}% 2
+\BOOKMARK [1][-]{section.3}{Related Work}{}% 3
+\BOOKMARK [1][-]{section.4}{General Architecture and Offloading methods}{}% 4
+\BOOKMARK [2][-]{subsection.4.1}{Offload Environment}{section.4}% 5
+\BOOKMARK [2][-]{subsection.4.2}{Offloading Solutions}{section.4}% 6
+\BOOKMARK [2][-]{subsection.4.3}{Data flow and main agents}{section.4}% 7
+\BOOKMARK [1][-]{section.5}{Framework Definition and Implementation}{}% 8
+\BOOKMARK [2][-]{subsection.5.1}{The client - Android Framework}{section.5}% 9
+\BOOKMARK [2][-]{subsection.5.2}{The server - Linux Embedded System}{section.5}% 10
+\BOOKMARK [1][-]{section.6}{Testing Methodology}{}% 11
+\BOOKMARK [2][-]{subsection.6.1}{Test setup}{section.6}% 12
+\BOOKMARK [1][-]{section.7}{Conclusions}{}% 13
