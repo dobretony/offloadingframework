@@ -17,11 +17,25 @@
 
 #define ADVERTISING_PACKET "10 02 01 1a 0c ff 18 01 48 45 4c 4c 4f 57 4f 52 4c 44"
 
+struct sockaddr_l2 {
+        sa_family_t l2_family;
+        unsigned short l2_psm;
+        bdaddr_t l2_bdaddr;
+        unsigned short l2_cid;
+        uint8_t l2_bdaddr_type;
+};
+
+#define L2CAP_CONNINFO  0x02
+struct l2cap_conninfo {
+  uint16_t       hci_handle;
+  uint8_t        dev_class[3];
+};
 
 extern int dev_id; /*device id that is to be used in the server. initialized in bluetooth.c*/
 extern struct hci_dev_info di;
 extern int dev_ctl;
-
+extern int l2cap_socket;
+extern struct sockaddr_l2 sockAddr;
 
 int bluetooth_init();
 int bluetooth_finalize();

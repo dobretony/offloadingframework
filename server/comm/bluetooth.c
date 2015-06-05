@@ -1,12 +1,5 @@
 #include "bluetooth.h"
 
-struct sockaddr_l2 {
-	sa_family_t l2_family;
-	unsigned short l2_psm;
-	bdaddr_t l2_bdaddr;
-	unsigned short l2_cid;
-	uint8_t l2_bdaddr_type;
-};
 
 #define ATT_CID 4
 
@@ -15,6 +8,7 @@ int dev_id = -1;
 struct hci_dev_info di;
 int dev_ctl = -1;
 int l2cap_socket = -1;
+struct sockaddr_l2 sockAddr;
 
 static int dev_info(int s, int dev_id)
 {
@@ -81,7 +75,7 @@ int init_l2cap_sock(int dev_id)
 		daddr = *BDADDR_ANY;
 	}
 
-	struct sockaddr_l2 sockAddr;
+//	struct sockaddr_l2 sockAddr;
 
 	memset(&sockAddr, 0, sizeof(sockAddr));
 	sockAddr.l2_family = AF_BLUETOOTH;
@@ -89,6 +83,7 @@ int init_l2cap_sock(int dev_id)
 	sockAddr.l2_cid = htobs(ATT_CID);
 	sockAddr.l2_bdaddr_type = BDADDR_LE_PUBLIC;
 
+	//bind the l2cap socket
 	int result = bind(l2cap_socket, (struct sockaddr*)&sockAddr, sizeof(sockAddr));
 
 	if(result == -1)
@@ -96,13 +91,20 @@ int init_l2cap_sock(int dev_id)
 	else
 		printf("Successfuly binded L2CAP address.\n");
 
+	//mark the l2cap socket to listen
+	result = listen(l2cap_socket, 1);
 
+	if(result == -1)
+		printf("Listening to L2CAP socket failed.\n");
+	else
+		printf("Successfuly listening to L2CAP socket.\n");	
+
+	return 0;
 }
 
 
 int start_l2cap_listen()
 {
-
 
 }
 

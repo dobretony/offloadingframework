@@ -3,4 +3,5 @@ server/bin
 server/comm/bin
 server/.dep
 server/comm/.dep
+server/offload-server
 *.class
