@@ -13,6 +13,98 @@ void intHandler(int signal)
 	exit(0);
 }
 
+void start_main_loop_rfcomm(){
+	
+	int result = -1;
+	int i = 0;
+	fd_set afds;
+	fd_set rfds;
+	
+	struct timeval tv;
+	int clientRfSock;
+
+	struct sockaddr_rc rem_addr = {0};	
+	socklen_t rfcommConnInfoLen;
+	socklen_t sockAddrLen;
+	bdaddr_t clientBdAddr;
+	
+	printf("Starting main loop and listening for rfcomm sockets..\n");
+	while(1){
+		FD_ZERO(&afds);
+		FD_SET(rfcomm_socket, &afds);
+
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+
+		result = select(FD_SETSIZE, &afds, NULL, NULL, &tv);
+/*
+		if(result == -1 ){
+			printf("Could not select socket.\n");
+			break;
+		}else if(result && FD_ISSET(rfcomm_socket, &afds)){
+			sockAddrLen = sizeof(rem_addr);
+			clientRfSock = accept(rfcomm_socket, (struct sockaddr *) &rem_addr, &sockAddrLen);
+
+			baswap(&clientBdAddr, &rem_addr.rc_bdaddr);
+			printf("accept %s\n", batostr(&clientBdAddr));
+
+			while(1){
+				FD_ZERO(&rfds);
+				FD_SET(0, &rfds);
+				FD_SET(clientRfSock, &rfds);
+
+                                tv.tv_sec = 1;
+                                tv.tv_usec = 0;
+
+                                result = select(clientRfSock + 1, &rfds, NULL, NULL, &tv);
+					
+				char buffer[1024];
+				int read_bytes = read(rfcomm_socket, buffer, 1024);
+				printf("%s\n", buffer);
+
+                                if(result){
+                                        printf("We got liftoff.\n");
+                                }else{
+					printf("Something went wrong.\n");
+				}
+
+
+			}
+		}
+*/
+
+
+		if(result < 0){
+			printf("select doesn't work.\n");
+			break;
+		}
+
+		for(i = 0; i < FD_SETSIZE; ++i)
+			if(FD_ISSET(i, &afds))
+			{
+				if ( i == rfcomm_socket)
+				{
+					/*Connection Request on original socket */
+					sockAddrLen = sizeof(rem_addr);
+					clientRfSock = accept(rfcomm_socket, (struct sockaddr *) &rem_addr, &sockAddrLen);
+					if(clientRfSock < 0)
+						{printf("Error accepting a socket."); break;}
+					FD_SET(clientRfSock, &afds);
+				}
+				else
+				{
+					/*Data arriving on already connected socket*/
+					char buffer[1024];
+        	                        int read_bytes = read(i, buffer, 1024);
+	                                printf("%s\n", buffer);
+					close(i);
+				}
+
+			}
+	}
+
+}
+
 
 void start_main_loop(){
 
@@ -86,8 +178,7 @@ int main()
 	bluetooth_adv_start(dev_ctl, dev_id);
 	//sleep(10);
 	
-	start_main_loop();
-
+	start_main_loop_rfcomm();
 
 
 	bluetooth_adv_stop(dev_ctl, dev_id);

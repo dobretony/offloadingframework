@@ -1,18 +1,37 @@
 package com.offloadingframework.photofeed;
 
-import android.support.v7.app.ActionBarActivity;
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import com.offloadingframework.offloadlibrary.OffloadService;
 
-
-public class Feed extends ActionBarActivity {
+public class Feed extends Activity {
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feed);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Intent intent = new Intent(this, OffloadService.class);
+        startService(intent);
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        Intent intent = new Intent(this, OffloadService.class);
+        stopService(intent);
+
     }
 
     @Override

@@ -6,10 +6,14 @@ import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothSocket;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
@@ -23,7 +27,10 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
 import android.util.Log;
+import android.util.SparseArray;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -63,22 +70,108 @@ public class OffloadService extends Service {
                 }
             };
 
-    private ScanCallback mScanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            Log.d(LOG_NAME, "Found advertisement: " + result.toString());
-        }
+    private ScanCallback mScanCallback;
 
-        @Override
-        public void onBatchScanResults(List<ScanResult> results) {
+    {
+        mScanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                Log.d(LOG_NAME, "Found advertisement: " + result.toString());
 
-        }
+                ScanRecord record = result.getScanRecord();
+                SparseArray<byte[]> advPacket = record.getManufacturerSpecificData();
 
-        @Override
-        public void onScanFailed(int errorCode) {
-            Log.d(LOG_NAME, "Scan failed.");
-        }
-    };
+                StringBuilder buffer = new StringBuilder();
+
+                for (int i = 0; i < advPacket.size(); i++) {
+                    for (byte b : advPacket.valueAt(i)) {
+                        buffer.append(String.format("%02X ", b));
+                    }
+                }
+
+                Log.d(LOG_NAME, "PACKET: " + buffer.toString());
+                if (buffer.toString().contains("48 45 4C 4C 4F 57 4F 52 4C")) {
+
+                    BluetoothDevice device = result.getDevice();
+                    //device.connectGatt(mContext, true, gattCallback);
+
+                    UUID uuid = null;
+                    device.fetchUuidsWithSdp();
+
+                    if(device.getUuids() != null)
+                        for(int i = 0; i < device.getUuids().length; i++)
+                            Log.d(LOG_NAME, "UUID: " + device.getUuids()[i]);
+
+                    uuid = UUID.fromString("6686416b-aa45-798f-1747-680bd1c4a59b");
+
+
+                    try {
+                            BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+                            socket.connect();
+                        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+                        writer.print("Hello!");
+                        writer.close();
+                            Log.d(LOG_NAME, "Success!!!");
+                            socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+
+                    Log.d(LOG_NAME, "Trying to connect to device.");
+
+                }
+
+            }
+
+            @Override
+            public void onBatchScanResults(List<ScanResult> results) {
+
+                for (ScanResult result : results) {
+
+                    Log.d(LOG_NAME, "Found advertisement in batch: " + result.toString());
+
+                    ScanRecord record = result.getScanRecord();
+                    SparseArray<byte[]> advPacket = record.getManufacturerSpecificData();
+
+                    StringBuilder buffer = new StringBuilder();
+
+                    for (int i = 0; i < advPacket.size(); i++) {
+                        for (byte b : advPacket.valueAt(i)) {
+                            buffer.append(String.format("%02X ", b));
+                        }
+                    }
+
+                    Log.d(LOG_NAME, "PACKET: " + buffer.toString());
+                    if (buffer.toString().contains("48 45 4C 4C 4F 57 4F 52 4C")) {
+
+                        BluetoothDevice device = result.getDevice();
+                        //device.connectGatt(mContext, true, gattCallback);
+
+                        UUID uuid = device.getUuids()[0].getUuid();
+                        try {
+                            BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+                            socket.connect();
+
+                            //socket.getInputStream();
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        Log.d(LOG_NAME, "Trying to connect to device.");
+
+                    }
+
+                }
+
+            }
+
+            @Override
+            public void onScanFailed(int errorCode) {
+                Log.d(LOG_NAME, "Scan failed.");
+            }
+        };
+    }
 
 
     private Runnable scanForServerRunnable = new Runnable() {
@@ -101,7 +194,10 @@ public class OffloadService extends Service {
         final BluetoothManager bluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
 
+        Log.d(LOG_NAME, "Started Service.");
+
         HandlerThread thread = new HandlerThread("ServiceStartArguments", Process.THREAD_PRIORITY_BACKGROUND);
+        thread.start();
 
         mServiceLooper = thread.getLooper();
         mServiceHandler = new OffloadServiceHandler(mServiceLooper);
@@ -117,8 +213,16 @@ public class OffloadService extends Service {
             filters = new ArrayList<ScanFilter>();
         }
 
+        mServiceHandler.sendMessage(msg);
 
         return Service.START_NOT_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mServiceHandler.removeCallbacks(scanForServerRunnable);
+        Log.d(LOG_NAME, "Service is destroyed.");
     }
 
     @Override
@@ -148,13 +252,14 @@ public class OffloadService extends Service {
         if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()){
             return;
         }
+        Log.d(LOG_NAME, "Started Scanning.");
 
         mServiceHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if(Build.VERSION.SDK_INT < 21){
+                if (Build.VERSION.SDK_INT < 21) {
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                }else {
+                } else {
                     mLEScanner.stopScan(mScanCallback);
                 }
             }
@@ -166,7 +271,7 @@ public class OffloadService extends Service {
         }else{
             mLEScanner.startScan(mScanCallback);
         }
-        
+
     }
 
 
@@ -198,7 +303,28 @@ public class OffloadService extends Service {
         }
     }
 
+    BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            super.onConnectionStateChange(gatt, status, newState);
 
+            switch(newState){
+                case BluetoothProfile.STATE_CONNECTED:
+                    Log.d(LOG_NAME, "STATE_CONNECTED.");
+                    foundServer = true;
+                    BluetoothDevice device = gatt.getDevice();
+                    break;
+                case BluetoothProfile.STATE_DISCONNECTED:
+                    Log.d(LOG_NAME, "STATE_DISCONNECTED.");
+                    foundServer = false;
+                    break;
+                default:
+                    Log.e(LOG_NAME, "STATE_OTHER");
+                    break;
+            }
+
+        }
+    };
 
 
 }

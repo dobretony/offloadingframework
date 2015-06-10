@@ -1,5 +1,6 @@
 #include "bluetooth.h"
 
+#define RFCOMM_CHANNEL 11
 
 #define ATT_CID 4
 
@@ -9,6 +10,8 @@ struct hci_dev_info di;
 int dev_ctl = -1;
 int l2cap_socket = -1;
 struct sockaddr_l2 sockAddr;
+int rfcomm_socket = -1;
+struct sockaddr_rc loc_addr = {0};
 
 static int dev_info(int s, int dev_id)
 {
@@ -51,9 +54,11 @@ int bluetooth_init()
 	set_adv_packet(dev_id, ADVERTISING_PACKET);
 	printf("Succesfully set the Advertising data to %s.\n", ADVERTISING_PACKET);
 
-	//init the l2cap socket that will listen for LE connections
-	init_l2cap_sock(dev_id);	
+	register_service();
 
+	//init the l2cap socket that will listen for LE connections
+	//init_l2cap_sock(dev_id);	
+	init_rfcomm_sock(dev_id);
 }
 
 int bluetooth_finalize()
@@ -100,6 +105,39 @@ int init_l2cap_sock(int dev_id)
 		printf("Successfuly listening to L2CAP socket.\n");	
 
 	return 0;
+}
+
+int init_rfcomm_sock(int dev_id)
+{
+	char buf[1024] = {0};
+
+	int s, client, bytes_read;
+
+	//alocate socket
+	rfcomm_socket = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+	
+	//bind socket to port 1 of the first available local bluetooth adapter
+	loc_addr.rc_family = AF_BLUETOOTH;
+	loc_addr.rc_bdaddr = *BDADDR_ANY;
+	loc_addr.rc_channel = (uint8_t)RFCOMM_CHANNEL;
+
+	printf("Trying to bind rfcomm socket.\n");
+	int result = bind(rfcomm_socket, (struct sockaddr*)&loc_addr, sizeof(loc_addr));
+	
+	if(result == -1)
+		printf("Could not bind RFCOMM socket.\n");
+	else
+		printf("Succesful.\n");
+
+	printf("Trying to set listen on rfcomm_socket.");
+	result = listen(rfcomm_socket, 1);
+
+	if(result == -1)
+		printf("Could not set rfcomm socekt to listen.\n");
+	else
+		printf("Successful.\n");
+	
+
 }
 
 
@@ -359,6 +397,106 @@ void set_adv_packet(int dev_id, const char* adv_string)
         hci_close_dev(dd);
 }
 
+static int bt_string_to_uuid128(bt_uuid_t *uuid, const char *string)
+{
+	uint32_t data0, data4;
+	uint16_t data1, data2, data3, data5;
+	uint128_t n128, u128;
+	uint8_t *val = (uint8_t *) &n128;
 
+	if (sscanf(string, "%08x-%04hx-%04hx-%04hx-%08x%04hx",
+				&data0, &data1, &data2,
+				&data3, &data4, &data5) != 6)
+		return -EINVAL;
+
+	data0 = htonl(data0);
+	data1 = htons(data1);
+	data2 = htons(data2);
+	data3 = htons(data3);
+	data4 = htonl(data4);
+	data5 = htons(data5);
+
+	memcpy(&val[0], &data0, 4);
+	memcpy(&val[4], &data1, 2);
+	memcpy(&val[6], &data2, 2);
+	memcpy(&val[8], &data3, 2);
+	memcpy(&val[10], &data4, 4);
+	memcpy(&val[14], &data5, 2);
+
+	ntoh128(&n128, &u128);
+
+	bt_uuid128_create(uuid, u128);
+
+	return 0;
+}
+
+
+sdp_session_t *register_service()
+{
+	uint32_t service_uuid_int[] = {0, 0, 0, 0xABCD};
+	uint8_t rfcomm_channel = RFCOMM_CHANNEL;
+	const char *service_name = "Offload Service";
+	const char *service_dsc = "And experimental offloading service.";
+	const char *service_prov = "Offloading";
+
+	bt_uuid_t serviceUUID;
+	uuid_t root_uuid, l2cap_uuid, rfcomm_uuid, svc_uuid;
+	sdp_list_t *l2cap_list = 0,
+		   *rfcomm_list = 0,
+		   *root_list = 0,
+		   *proto_list = 0,
+		   *access_proto_list = 0;
+
+	sdp_data_t *channel =0, *psm =0;
+
+	sdp_record_t *record = sdp_record_alloc();
+
+	bt_string_to_uuid128(&serviceUUID, SERVICE_UUID);
+	//service_uuid_int = serviceUUID.value.u128;
+	// set the general service ID
+	sdp_uuid128_create( &svc_uuid, &serviceUUID.value.u128 );
+    	sdp_set_service_id( record, svc_uuid );
+
+    	// make the service record publicly browsable
+    	sdp_uuid16_create(&root_uuid, PUBLIC_BROWSE_GROUP);
+    	root_list = sdp_list_append(0, &root_uuid);
+    	sdp_set_browse_groups( record, root_list );
+
+    	// set l2cap information
+    	sdp_uuid16_create(&l2cap_uuid, L2CAP_UUID);
+    	l2cap_list = sdp_list_append( 0, &l2cap_uuid );
+    	proto_list = sdp_list_append( 0, l2cap_list );
+
+    	// set rfcomm information
+    	sdp_uuid16_create(&rfcomm_uuid, RFCOMM_UUID);
+    	channel = sdp_data_alloc(SDP_UINT8, &rfcomm_channel);
+    	rfcomm_list = sdp_list_append( 0, &rfcomm_uuid );
+    	sdp_list_append( rfcomm_list, channel );
+    	sdp_list_append( proto_list, rfcomm_list );
+
+    	// attach protocol information to service record
+    	access_proto_list = sdp_list_append( 0, proto_list );
+    	sdp_set_access_protos( record, access_proto_list );
+
+    	// set the name, provider, and description
+    	sdp_set_info_attr(record, service_name, service_prov, service_dsc);
+
+	int err = 0;
+    	sdp_session_t *session = 0;
+
+    	// connect to the local SDP server, register the service record, and 
+    	// disconnect
+    	session = sdp_connect( BDADDR_ANY, BDADDR_LOCAL, SDP_RETRY_IF_BUSY );
+    	err = sdp_record_register(session, record, 0);
+
+    	// cleanup
+    	sdp_data_free( channel );
+    	sdp_list_free( l2cap_list, 0 );
+    	sdp_list_free( rfcomm_list, 0 );
+    	sdp_list_free( root_list, 0 );
+    	sdp_list_free( access_proto_list, 0 );
+
+	return session;
+}
 
 
