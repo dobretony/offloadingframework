@@ -65,6 +65,7 @@ int bluetooth_finalize()
 {
 	bring_down(dev_ctl,dev_id);
 	close(l2cap_socket);
+	close(rfcomm_socket);
 }
 
 

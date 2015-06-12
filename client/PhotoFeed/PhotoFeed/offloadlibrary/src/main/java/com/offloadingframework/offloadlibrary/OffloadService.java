@@ -29,7 +29,9 @@ import android.os.Process;
 import android.util.Log;
 import android.util.SparseArray;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +59,12 @@ public class OffloadService extends Service {
     private ScanSettings settings;
     private ArrayList<ScanFilter> filters;
 
+    private BluetoothSocket offloadSocket = null;
+    private PrintWriter socketPrintWriter = null;
+    private BufferedReader socketBufferedReader = null;
+
+    private static UUID uuid = UUID.fromString("6686416b-aa45-798f-1747-680bd1c4a59b");
+
     /**
      * Variable that states if an offload server is nearby.
      */
@@ -77,6 +85,7 @@ public class OffloadService extends Service {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
                 Log.d(LOG_NAME, "Found advertisement: " + result.toString());
+                if(foundServer) return;
 
                 ScanRecord record = result.getScanRecord();
                 SparseArray<byte[]> advPacket = record.getManufacturerSpecificData();
@@ -89,36 +98,39 @@ public class OffloadService extends Service {
                     }
                 }
 
+                if(result.getDevice().getUuids() != null)
+                    for(int i = 0; i < result.getDevice().getUuids().length; i++){
+                        Log.e(LOG_NAME, "UUID: " + result.getDevice().getUuids()[i]);
+                    }
+
                 Log.d(LOG_NAME, "PACKET: " + buffer.toString());
                 if (buffer.toString().contains("48 45 4C 4C 4F 57 4F 52 4C")) {
 
                     BluetoothDevice device = result.getDevice();
-                    //device.connectGatt(mContext, true, gattCallback);
-
-                    UUID uuid = null;
+                    //handleSocket(device);
                     device.fetchUuidsWithSdp();
 
-                    if(device.getUuids() != null)
-                        for(int i = 0; i < device.getUuids().length; i++)
-                            Log.d(LOG_NAME, "UUID: " + device.getUuids()[i]);
-
-                    uuid = UUID.fromString("6686416b-aa45-798f-1747-680bd1c4a59b");
-
-
                     try {
-                            BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
-                            socket.connect();
-                        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-                        writer.print("Hello!");
-                        writer.close();
-                            Log.d(LOG_NAME, "Success!!!");
-                            socket.close();
+                        Log.d(LOG_NAME, "Found the device, now trying to connect to it through " + uuid.toString());
+
+                        offloadSocket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+                        offloadSocket.connect();
+                        socketPrintWriter = new PrintWriter(offloadSocket.getOutputStream(), true);
+                        socketBufferedReader = new BufferedReader(new InputStreamReader(offloadSocket.getInputStream()));
+
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        //e.printStackTrace();
+                        Log.e(LOG_NAME, "Could not connect to server.");
+                        foundServer = false;
+                        return;
+
                     }
 
+                    Log.d(LOG_NAME, "Found server and succesfully connected to it.");
+                    foundServer = true;
+                    mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
 
-                    Log.d(LOG_NAME, "Trying to connect to device.");
+
 
                 }
 
@@ -130,6 +142,8 @@ public class OffloadService extends Service {
                 for (ScanResult result : results) {
 
                     Log.d(LOG_NAME, "Found advertisement in batch: " + result.toString());
+
+                    if(foundServer) return;
 
                     ScanRecord record = result.getScanRecord();
                     SparseArray<byte[]> advPacket = record.getManufacturerSpecificData();
@@ -144,22 +158,8 @@ public class OffloadService extends Service {
 
                     Log.d(LOG_NAME, "PACKET: " + buffer.toString());
                     if (buffer.toString().contains("48 45 4C 4C 4F 57 4F 52 4C")) {
-
-                        BluetoothDevice device = result.getDevice();
-                        //device.connectGatt(mContext, true, gattCallback);
-
-                        UUID uuid = device.getUuids()[0].getUuid();
-                        try {
-                            BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
-                            socket.connect();
-
-                            //socket.getInputStream();
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        Log.d(LOG_NAME, "Trying to connect to device.");
-
+                        handleSocket(result.getDevice());
+                        return;
                     }
 
                 }
@@ -169,6 +169,7 @@ public class OffloadService extends Service {
             @Override
             public void onScanFailed(int errorCode) {
                 Log.d(LOG_NAME, "Scan failed.");
+                foundServer = false;
             }
         };
     }
@@ -273,6 +274,76 @@ public class OffloadService extends Service {
         }
 
     }
+
+
+    public void handleSocket(BluetoothDevice device){
+
+        try {
+            Log.d(LOG_NAME, "Found the device, now trying to connect to it through " + uuid.toString());
+
+            offloadSocket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+            offloadSocket.connect();
+            socketPrintWriter = new PrintWriter(offloadSocket.getOutputStream(), true);
+            socketBufferedReader = new BufferedReader(new InputStreamReader(offloadSocket.getInputStream()));
+
+        } catch (IOException e) {
+            //e.printStackTrace();
+            Log.e(LOG_NAME, "Could not connect to server.");
+            foundServer = false;
+            return;
+
+        }
+
+        Log.d(LOG_NAME, "Found server and succesfully connected to it.");
+        foundServer = true;
+        mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
+    }
+
+    public void socketCheckSanity(){
+
+        socketPrintWriter.print("PING");
+        socketPrintWriter.flush();
+
+        char[] buffer = new char[100];
+        try {
+
+            socketBufferedReader.read(buffer, 0, 100);
+            String stringBuffer = new String(buffer);
+            if(!stringBuffer.equals("ACK"))
+                foundServer = false;
+
+        } catch (IOException e) {
+            //e.printStackTrace();
+            foundServer = false;
+        }
+
+        if(!foundServer){
+            mServiceHandler.removeCallbacks(sanityCheckRunnable);
+            socketPrintWriter.close();
+
+
+            try {
+
+                socketBufferedReader.close();
+                offloadSocket.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }else{
+            Log.i(LOG_NAME, "Server ACK received.");
+        }
+
+    }
+
+    private static long PING_TIME = 5000;
+    private Runnable sanityCheckRunnable = new Runnable() {
+        @Override
+        public void run() {
+            socketCheckSanity();
+        }
+    };
 
 
     private final class OffloadServiceHandler extends Handler {

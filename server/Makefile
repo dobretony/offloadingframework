@@ -2,7 +2,7 @@ CC=gcc
 TARGET=offload-server
 COMM_DIR=./comm
 
-SOURCE += ./main.c
+SOURCE += ./main.c ./server.c
 SOURCE += $(COMM_DIR)/bluetooth.c
 
 ## End sources definition

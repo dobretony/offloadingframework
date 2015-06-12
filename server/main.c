@@ -4,6 +4,7 @@
 #include<unistd.h>
 
 #include "comm/bluetooth.h"
+#include "server.h"
 
 void intHandler(int signal)
 {
@@ -97,7 +98,7 @@ void start_main_loop_rfcomm(){
 					char buffer[1024];
         	                        int read_bytes = read(i, buffer, 1024);
 	                                printf("%s\n", buffer);
-					close(i);
+					handle_request(i, buffer, read_bytes);
 				}
 
 			}

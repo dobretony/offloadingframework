@@ -1,3 +1,6 @@
+#ifndef OFFLOAD_BLUETOOTH_HEADER
+#define OFFLOAD_BLUETOOTH_HEADER
+
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
@@ -61,3 +64,5 @@ void bring_down(int ctl, int hdev);
 void set_adv_packet(int dev_id, const char* adv_string);
 int init_rfcomm_sock(int dev_id);
 sdp_session_t *register_service();
+
+#endif //OFFLOAD_BLUETOOTH_SERVER
