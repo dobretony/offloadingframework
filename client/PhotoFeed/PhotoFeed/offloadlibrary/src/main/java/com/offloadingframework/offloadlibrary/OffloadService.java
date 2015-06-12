@@ -253,6 +253,11 @@ public class OffloadService extends Service {
         if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()){
             return;
         }
+
+        //stop scanning if there already is a socket
+        if(offloadSocket != null && offloadSocket.isConnected())
+            return;
+
         Log.d(LOG_NAME, "Started Scanning.");
 
         mServiceHandler.postDelayed(new Runnable() {
@@ -278,6 +283,10 @@ public class OffloadService extends Service {
 
     public void handleSocket(BluetoothDevice device){
 
+        if(offloadSocket != null && offloadSocket.isConnected()){
+            return;
+        }
+
         try {
             Log.d(LOG_NAME, "Found the device, now trying to connect to it through " + uuid.toString());
 
@@ -299,10 +308,85 @@ public class OffloadService extends Service {
         mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
     }
 
+
+    public synchronized void writeToSocket(char[] buffer){
+
+        if(!offloadSocket.isConnected()){
+
+            foundServer = false;
+            mServiceHandler.removeCallbacks(sanityCheckRunnable);
+
+            try {
+                socketPrintWriter.close();
+                socketBufferedReader.close();
+            }catch(IOException e){
+                Log.e(LOG_NAME, "");
+            }
+
+            return;
+        }
+
+        try {
+            Log.d(LOG_NAME, "Seding " + buffer + " to server.");
+            socketPrintWriter.print(buffer);
+            socketPrintWriter.flush();
+        }catch(Exception e){
+            foundServer = false;
+        }
+
+    }
+
+    public synchronized void writeToSocket(String buffer){
+
+        if(offloadSocket == null || !offloadSocket.isConnected()){
+
+            cleanUpSocket();
+            return;
+
+        }
+
+        try {
+            Log.d(LOG_NAME, "Sending " + buffer + " to server.");
+            socketPrintWriter.print(buffer);
+            socketPrintWriter.flush();
+        }catch(Exception e){
+            foundServer = false;
+            cleanUpSocket();
+        }
+
+    }
+
+
+    public void cleanUpSocket(){
+
+
+        mServiceHandler.removeCallbacks(sanityCheckRunnable);
+        if(socketPrintWriter != null) socketPrintWriter.close();
+
+
+        try {
+
+            if(socketBufferedReader != null) socketBufferedReader.close();
+            if(offloadSocket != null) offloadSocket.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        socketBufferedReader = null;
+        socketPrintWriter = null;
+        offloadSocket = null;
+
+        Message m = mServiceHandler.obtainMessage();
+        m.arg1 = Constants.START_SCANNING;
+        mServiceHandler.handleMessage(m);
+
+
+    }
+
     public void socketCheckSanity(){
 
-        socketPrintWriter.print("PING");
-        socketPrintWriter.flush();
+        writeToSocket("PING");
 
         char[] buffer = new char[100];
         try {
@@ -312,27 +396,15 @@ public class OffloadService extends Service {
             if(!stringBuffer.equals("ACK"))
                 foundServer = false;
 
-        } catch (IOException e) {
-            //e.printStackTrace();
+        } catch (Exception e) {
             foundServer = false;
         }
 
         if(!foundServer){
-            mServiceHandler.removeCallbacks(sanityCheckRunnable);
-            socketPrintWriter.close();
-
-
-            try {
-
-                socketBufferedReader.close();
-                offloadSocket.close();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
+            cleanUpSocket();
         }else{
             Log.i(LOG_NAME, "Server ACK received.");
+            mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
         }
 
     }

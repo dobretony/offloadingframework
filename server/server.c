@@ -3,9 +3,9 @@
 
 void handle_request(int socket, char* buffer, int length){
 
-
-	if(strncmp(buffer, "PING", length)){
-		
+	printf("Intra in handle request.\n");
+	if(!strncmp(buffer, "PING", length)){
+		printf("Received PING sending ACK.\n");	
 		write(socket, "ACK", 4);
 
 	}else {
