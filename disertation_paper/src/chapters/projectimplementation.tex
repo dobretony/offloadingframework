@@ -1,2 +1,28 @@
 \chapter{Project Implementation}
 \label{chapter:implementation}
+
+In order to achieve the desired performance and low energy consumption, an offloading software framework is proposed. The BLE Offloading Framework is structured as a client-server architecture that uses Bluetooth Low Energy technology in order to communicate.
+
+\subsection{The client - Android Framework}
+
+The BLEOffloadingFramework offers an Application Programmable Interface (API) for developers of applications on Android devices. Using the Bluetooth Low Energy framework available since Android version 4.2 these devices can scan and connect to other devices, without an impact on performance or power consumption.
+
+At the current state of the project the framework represents a test application that connects through BLE to the server side program and sends small packets of data that mimics data transfer over a period of time.
+
+%The offloading system is designed to offer methods through which a developer can register certain methods to be offloaded through RPC/RMI ( in which the application waits for a certain output ) or through the Loose coupling method ( where the application will be notified when results are available ). The users must select the desired method when first designing the application, but theoretical results show that a combination between the two methods seems to offer the best performance: perform an RPC call to the offload node on a separate thread and wait for the results in parallel to other tasks. BLEOffloadingFramework will offer methods and callbacks written in the Java programming language in order to simplify the task of offloading methods.
+
+%In the loose coupling scenario, the developer creates a serializable class structure, by inheriting a class from the framework or implementing an interface and annotate methods of that class that can be offloaded. In this case, when the framework detects the right offloading conditions ( there is an offload node available and ready ) it will request and send that class through serialization to the server, which will perform the necessary calculations and return a result.
+
+%Regarding the RPC/RMI method, the framework manages the methods that are marked for offloading and check if the offloading node is available and if it has that method available. In this case, the code is duplicated between client and server, but it has the added benefit of being faster, relative to the loose coupling method.
+
+\subsection{The server - Linux Embedded System}
+
+Because of the easy to use interface and availability of source code, the server is conceptualized on a Linux Operating System and uses the BlueZ\cite{BlueZ} open source Bluetooth stack. For connectivity, a Bluetooth 4.0 USB dongle is used. This permits a generality for the  system in the sense that it is not hardware specific - any Bluetooth chipset that abides to the standard can be used, even if it is directly embedded on the system, communicating through the UART interface, or through the USB protocol.
+
+In order to facilitate development, the server is written in the C language. The basic server functionality is handling Bluetooth connections and responding in an efficient way to requests from clients as decided in the protocol mention in section \ref{dataflow}.
+
+The server starts off by advertising its availability using BLE Advertising\cite{BLE2} in connectable mode. This permits clients to automatically connect to the server and create an L2CAP socket that becomes available for use in transmitting and receiving data. After a connection is established, the server application waits a predefined period of time for clients to send a request header, that contains the type of offloading and data type that the client expects to receive after the invocation of the methods.
+
+%In case of the loose coupled system, the server will load a Java Virtual Machine and will pass the serialized object to it, perform the calculations and send the results. In case of the procedure calls, the server will detain a list of methods or functions that can be called and will execute them when the request is received.
+
+%The server program is still a work in progress and the exact technologies and methodologies that will be used are to be determined after a series of performance tests.

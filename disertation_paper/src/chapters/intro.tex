@@ -84,3 +84,22 @@
 % \label{table:reports}
 %\end{table}
 %\end{center}
+
+
+In past years, mobile devices have encountered a widespread use among technical and regular consumers world wide. This increase in popularity is based on the advent of the Internet and social media, together with easy to use, user-friendly interfaces and applications for hand held devices worldwide. A mobile device is not defined anymore as a strict communication device, but as a hand held computer that acts as an access point to content and information sharing.
+
+
+Although this growth spark of recent years has lead to over the top technological advances, mobile devices have their limits which is mostly reflected in their size and battery life. The key for a successful device is to provide a user-friendly interface with a rich set of features, ranging from on-the-go connectivity to playing media. The main issue that arises in such a rich environment is the constraints on battery life and the fact that producers need to maintain a balance between usability and efficiency. Most smart phones today run on a typical battery of 1500 mAh \cite{understandingBattery}, mainly because this is a limitation in size. Unlike smart phone technology that has developed drastically in the past few years, battery technology has been evolving for the past century and such no large breakthrough has been discovered in the last 15 years\cite{batteryLife}.
+
+
+Developers for and of the smart phone platforms have since realized that they need to bypass the hardware constraints and create either power efficient chipsets and components or create efficient software that provides the selected features that are in demand. A method that can achieve a more efficient energy consumption on smart phone devices would be a mixed approach of power efficient hardware and the ability to communicate with other devices and software, called code offloading.
+
+
+Computational offloading\index{offloading} is a technique used to share the processing power of several devices between each other in order to achieve better performance. Code offloading is a technique that has gained a lot of interest recently due to the possibility of using the \textit{System as a Service} architecture of cloud computing in order to offload resource intensive operations to cloud-based surrogates\cite{shiraz2013review}, especially in the case of low-power devices such as smartphones. This technique usually occurs at the code level, where a mobile application may be partitioned such that some of the more process-intensive tasks or algorithms would be run on separate machines. The partitioning can be done either by the developer, statically, or it can be determined at runtime, dynamically, by a simple linear algorithm that measures the cost of data transfer and the potential offloading gain that can be achieved for certain tasks. Because the cost might outweigh the benefit gained, offloading should be considered an optional process preferred in mobile operations that require high amounts of processing time and low amounts of data transferred between devices\cite{kumar2010cloud}.
+
+
+
+
+%The idea is to send in an efficient way across devices code sequences and data in order for lower end devices to benefit from devices with a higher performance. There are two key aspects regarding offloading: code consistency and the link used between devices. The first concern reflects that the code and data shared between devices has to be consistent: the device that does the offloading has to correctly pick off the sequence of code and integrate it back in the main system, without loss of data or time. In this paper, two methods of code sharing are proposed: remote procedure calls and loose-coupled systems. 
+
+The project proposed in this paper will make use of the aforementioned methods and together with the benefits of Bluetooth Low Energy technology enables an offloading framework which is referred to as BLEOffloadingFramework  (Bluetooth Low Energy Offloading Framework) throughout this paper. In order to quantify the advantages that this project brings to application developers a methodology for testing the offloading framework is also presented.

@@ -1,2 +1,16 @@
 \chapter{Experimental Results}
 \label{chapter:results}
+
+In order to validate the offloading system, a series of performance and stress tests are the determining factor. In this chapter, the testing methodologies are described for the BLEOffloadFramework.
+
+\subsection{Test setup}
+
+In order to offer conclusive data, the test setup contains different types of mobile devices that can benefit from the Offloading Framework, in this case, two smart phone devices from different producers with different specifications. Both devices are using the Android Operating System, version 4.4, in order to benefit from the Bluetooth Low Energy technology.
+
+Both devices are charged to maximum capacity, as indicated by the Android notification system and run the same applications. Example applications include simple programs that are computational intensive, such as image processing applications or route calculating algorithms, which are common algorithms among mobile devices.
+
+The idea is to expose the device to a series of tests, conducted using UIAutomator, a testing tool for Android that emulates user behavior. The test sequence repeats a pattern of user touch inputs until the devices receives a low battery notification, after which the time it took for the device to deplete it's battery is measured as the time between the start of the UIAutomator test case and the low power event.
+
+Several test cases are distinguishable: The case where offloading is disabled and when offloading is enabled using different methods. The results of these test cases will roughly predict the power consumption of the devices in real life scenarios and the initial data can be extrapolated in order to predict the overall gain of using the offloading system.
+
+These tests should reveal that using the framework described in section \ref{architecture} will have an impact on energy consumption, in the sense that it takes a longer time to reach the low-battery notification. Exact empirical results will be available once the API for Android applications is completed.
