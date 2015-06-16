@@ -1,10 +1,21 @@
-\chapter{Project Build System Makefiles}
+\chapter{BLEOffloadingFramework General Use Case }
+\label{appendix:bleoffloadingframework}
 
 % All this appendix uses make syntax
-\lstset{language=make}
+%\lstset{language=make}
 
-\section{Makefile.test}
+\fig[scale=0.65]{src/img/OffloadingArchitecture.png}{img:offloading-framework}{Offloading Framework}
 
-\lstset{caption=Testing Targets Makefile (Makefile.test), label=lst:makefile-test}
-\lstinputlisting{src/code/build/Makefile.test}
+\begin{enumerate}
+\item{ Advertising phase: An offloading server uses the technique known as BLE Advertising in order to promote it's whereabouts to nearby devices.}
+
+\item{Enabling phase: A mobile device determines there is a server nearby through BLE Scan Filtering on a specific set of UUID. If an application desires to offload a certain part of its code to the server, it will generate a request to that server, which contains the offloading task, either pieces of code or specific task delegation.}
+
+\item{Request phase: Once the server and mobile device know of each other and the mobile device generates a request, the server can respond with either Accept or Reject, stating that offloading is either possible or, respectively, not possible. If offloading is possible, the mobile device will wait for the results of the selected task.}
+
+\item{Response phase: If the offloading was possible and successful, then the server will send back a response to the device containing the result of said computation}
+
+\end{enumerate}
+
+%\lstinputlisting{src/code/build/Makefile.test}
 

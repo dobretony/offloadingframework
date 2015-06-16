@@ -1,25 +1,67 @@
-\chapter{State of the Art}
+\chapter{Background and Related Work}
 \label{chapter:stateoftheart}
 
-When discussing an offloading framework, one of the key aspects is the link between devices that share code. If the link is not fast enough or consumes more energy that needed, it may cause the offloading process to slow down and thus impact user behavior. The BLEOffloadingFramework uses Bluetooth Low Energy in order to transfer code and data between devices.
+This chapter presents the technical background of the technologies used in constructing the BLEOffloadingFramework. As previously stated, Bluetooth wireless technology is used as a communication channel between offloading devices, as such the key terms of this standard are presented in section \ref{ble}.
 
-\subsection{Bluetooth Low Energy}
+The main consideration of the offloading framework is extending the battery life of embedded devices, with a special focus on smartphone mobile devices. In section \ref{android} the Android smartphone operating system is presented and the motivation for choosing this type of devices as the beneficiary for the framework.
+
+In section \ref{relatedwork} several offloading systems are presented and the main advantages of BLEOffloadingFramework over other systems is detailed.
+
+\section{Bluetooth Low Energy}
 \label{ble}
 
 Bluetooth has been a long standing standard for small area wireless communications. Most mobile devices, ranging from PDAs to mobile phones and other gadgets, use this technology in order to communicate effortlessly over short distances, making possible file transfers, contact sharing, wireless audio and video streaming and much more. With the progress of Internet and the Cloud, though, the need for small Personal Area Networks has been reduced, as its drawbacks became more and more obvious - battery life of mobile devices has been reduced and the added overhead of Bluetooth communications is not sustainable, has a low throughput and a small range. 
 
-Together with the specification of Bluetooth 4.0, Bluetooth SIG has also announced the standard for Bluetooth Low Energy. This standard focuses on a trade-off between energy consumption, latency, piconet size and throughput. The advent of this standard, versus other similar wireless solutions such as ZigBee, is due to the fact that it is applicable in a larger variety of use cases: healthcare devices, small electronics, low power devices, Internet of Things
-or security measures.
+Together with the specification of Bluetooth 4.0, Bluetooth SIG has also announced the standard for Bluetooth Low Energy\cite{gomez2012overview}. This standard focuses on a trade-off between energy consumption, latency, piconet size and throughput. The advent of this standard, versus other similar wireless solutions such as ZigBee, is due to the fact that it is applicable in a larger variety of use cases: healthcare devices, small electronics, low power devices, Internet of Things or security measures.
 
 This standard also offers full backwards compatibility, as the added benefit of low-energy transmissions can be used in parallel with the normal Bluetooth 4.0 specification. This is applicable because BLE mainly relies on parameter configuration and short, but consistent, device discovery.
 
 In classic BT applications, when two devices needed to communicate they had to be set in Discoverable mode, identify each other and create a secure connection in a process referred to as pairing and then follow the specifications of certain Profiles. We can compare this wireless connection capability to the OSI stack, where instead of protocols, we have profiles that specify how to interact with different devices. For example, in order to connect to a Bluetooth enabled
 Mouse or keyboard and use its facilities the device needs to follow the guidelines of the Human Interface Device (HID) profile.
 
+\todo{insert BLE stack picture here.}
+
+Just as in classic Bluetooth\cite{haartsen2000bluetooth}, the BLE protocol stack consists of two main parts: The Host and the Controller. The Controller contains the Physical Layer and the Link Layer and is integrated on a small System on A Chip with radio capabilities. The Host part of BLE usually runs on an application processor (such as the processor in a mobile phone) and contains upper layers of functionality such as:
+
+\begin{itemize}
+
+\item{Logical Link Control and Adaptation Protocol (L2CAP) - this layer is an optimized and simplified protocol based on the Bluetooth L2CAP, with the main goal of multiplexing data of other higher layer protocols.}
+
+\item{Attribute Protocol (ATT)- this protocol defines the communication between two devices playing the role of client and server. The server maintains a set of attributes, where an attribute is a data structure with information managed by GATT. The client can access the server's attributes by sending requests, while the server responds with response messages. These type of messages follow a stop-and-wait scheme.}
+
+\item{Generic Attribute Profile (GATT) - this profile defines a framework that uses the ATT for the discovery of services and the exchange of characteristics between devices. A characteristic can be defined by a set of items with values and properties.}
+
+\item{Security Manager Protocol (SMP) - BLE offers various security services for protecting information exchanged between devices, but most of the supported security services can be categorized in LE Security Mode 1 and LE Security Mode 2, which provide security at the Link Layer and ATT layer, respectively.}
+
+\item{Generic Access Profile (GAP) - This profile specifies device roles, modes and procedures for the discovery of devices and services, the management of connection establishment and security.}
+
+\end{itemize}
+
+It is worth mentioning that the GAP profile permits several operating modes, through which several techniques can be established. One such technique is called Advertising. In this technique, a device assumes the role of GAP Broadcaster, which sends small packets of data constantly. These packets contain a string of bytes that are used for identification of the device, the service used and also vendor-specific bytes.
+
+Devices can act as Observers in BLE and such pick up on notifications and packets transmitted by a device in Broadcaster role. This technique is called scanning, and most devices can efficiently scan for advertisement packets by applying filters at the Link Layer and such only receive notifications if there is a specific Broadcaster device in range.
+
+The BLEOffloadingFramework uses this technique in order to identify servers. If a mobile device desires to offload, it will start a scan over Bluetooth Low Energy and waits to see if it picks up any packets from a server. If such a packet exists, then the offloading framework on the client side becomes active and when an application wants to use this system a request will be generated.
+
+When the mobile devices exceeds the server range, it will loose contact with the server (no more advertising packets detected) and such it will shutdown the framework until a new server comes in range.
+
+Even though the main drawback would be the small range of BLE, which is around 10 meters for most devices and is dependent on the hardware, using this model of server detection and data transfer represents a tradeoff between the latency caused by a network connection to a distant cloud server in other offloading systems and the availability of such systems.
+
+\section{Android}
+\label{android}
+
+Android is an operating system designed for smartphones, with a focus on usability, touch input and efficiency, both in power and computational abilities. It was first defined as a "software stack for mobile devices that includes an operating system, middleware and key applications" \cite{developers2011android}. Today, Android exists on numerous devices, including smart watches, TVs and even cars \cite{androidwiki}.
+
+This operating system is designed on top of a modified Linux Kernel\footnote{Linux Kernel - http://www.kernel.org} with a specific stack designed with user applications on the very top. This model permits the enabling of security protocols on the lower levels (closer to the hardware), while providing a feature rich environment for third party developers that deliver content to this specific ecosystem.
+
+Because of the availability of this code, the plethora of devices it runs on an the simple interface that it provides, the BLEOffloadingFramework is constructed mainly for the Android Operating System.
+
+\todo{NOTE ON FIRST DRAFT: should I add more to this part, such as the Android framework and SDK?}
+
 \section{Related Work}
 \label{relatedwork}
 
-This article is based primary on the works of \cite{Alex} in which an offloading mechanism based on the application life cycle is proposed.
+This article is based primary on the works of \cite{olteanu2013extending} in which an offloading mechanism based on the application life cycle is proposed.
 
 In this model, an application has several states such as interaction with an user via the GUI, processing multiplayer commands, simulations, graphic pipe rendering or terrain generation and some of them are done cyclically by the application. The research is based on the fact that certain states of the above loop can be offloaded completely on other devices or on servers in the cloud. One such application that fits this pattern is OpenTTD. 
 
@@ -29,10 +71,6 @@ As an example we can either use the same technique in the GenerateWorld state, w
 
 The framework presented in this paper proposes a more generic approach to offloading, in that the focus will be more on optimizing the data path between devices together with the capability of applying this framework on almost any type of application.
 
-In \cite{CloneCloud} a more general offloading solution is proposed. In this method, using the high performance and mobility of cloud technology a virtual machine is created that simulates the exact environment of an application from a mobile device. With such a medium, code translating from mobile device to another machine is straightforward and less error prone. The only drawback that may occur is the fact that data usually has to be transferred across multiple points in order to be processed and that the mobile device has to always be online.
+In \cite{chun2011clonecloud} a more general offloading solution is proposed. In this method, using the high performance and mobility of cloud technology a virtual machine is created that simulates the exact environment of an application from a mobile device. With such a medium, code translating from mobile device to another machine is straightforward and less error prone. The only drawback that may occur is the fact that data usually has to be transferred across multiple points in order to be processed and that the mobile device has to always be online.
 
-The BLEOffloadingFramework will try to handle these problems by reducing the amount of time spent on data communication, while maintaining the generic aspect of the code that can be offloaded. 
-
-%\begin{compactitem}
-%\item sem lorem molestie diam, iaculis aliquet sapien tortor non nisi. \item %Pellentesque bibendum pretium aliquet. 
-%\end{compactitem}
+The BLEOffloadingFramework will try to handle these problems by reducing the amount of time spent on data communication, while maintaining the generic aspect of the code that can be offloaded.
