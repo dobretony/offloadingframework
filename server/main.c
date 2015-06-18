@@ -4,6 +4,7 @@
 #include<unistd.h>
 
 #include "comm/bluetooth.h"
+#include "aux/mandelbrot.h"
 #include "server.h"
 
 void intHandler(int signal)

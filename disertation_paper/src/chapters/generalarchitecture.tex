@@ -1,64 +1,74 @@
 \chapter{General Architecture}
 \label{chapter:architecture}
 
-This section presents the main guidelines of the architecture used in developing the BLEOffloadingFramework and the two main offloading solutions. The first topic of discussion is the environment in which the framework is run, followed by the presentation of the techniques used and finally a general description of the data flow.
+In order to obtain the maximum gain in a computational offloading system, it's components have to be designed with efficiency. This chapter presents the environment and data flow of the BLEOffloadingFramework and presents the motivation behind the design.
 
-\subsection{Offload Environment}
-\label{environment}
+\section{Offloading Agents}
+\label{agents}
 
-When talking about offloading in a mobile context, we mainly refer to transferring code and data from hand held devices. These devices have evolved in recent years from the mobile phones used to communicate between two or more people to personal computers that permit you to connect to the Internet, socialize, play videos, listen to songs and much more. On the current market, the lead operating systems for smart phones are Android, open source project maintained and controlled by Google, and iOS, proprietary software owned by Apple.
+When discussing code offloading or task delegation two roles can be defined for the devices involved:
 
-Because of its open source nature and the fact that it is present on different devices with different specifications, the BLEOffloadingFramework was built with Android as the primary client for this architecture. Although, the generic approach devised here accounts for any smart phone that has the capability of Bluetooth Low Energy technology.
+\begin{itemize}
 
-Android is an operating system based on the Linux kernel \footnote{www.kernel.org} with enhancements regarding embedded systems, such as a well defined sleep/idle time, better power management, paranoid security and a well rounded framework that acts as a layer between underlying hardware and software applications. The Android Framework is mainly written in Java and has a client-server approach to inter process communications and event managing.
+\item{The offloading device (The Client)}
 
-This approach permits applications developed by third parties to be created and run inside their own virtual machine and whenever they need a system functionality, such as access to the camera hardware or to other applications a request needs to be sent through the framework. An overview of Android and its functionality can be viewed at \cite{Android}.
+	This device is usually a low performance device or a device that pertains a certain gain when it transfers part of its code to another device, or when it delegates a task to a more powerful device. In the context of mobile devices, the technology they comprise has seen a powerful increase in recent years \cite{abolfazli2012mobile}. As consumers tend to move farther away from stationary computing stations, such as Personal Computers (PCs) \abbrev{PC}{Personal Computer} \cite{gartnerforecast}, so too has the focus of recent year research has moved to a more mobile friendly environment. 
+	
+	Even with new technology being developed every day, mobile systems are met with increasing issues due to physical restraints (e.g. overheating due to closeness of components) or battery life. This represents the main motivation for augmenting the current computational needs of an embedded device, such as a smartphone, through the help of computational offloading.
+	
+	The framework presented in this paper considers mobile devices as the main beneficiary of code offloading and task delegation, with the main purpose of reducing energy consumption. Other models can be implemented and the system described here can be applied to other type of devices, due to the generic approach in its construction, but the focus will remain on smartphone technology.
 
-As such, the environment that the offloading framework proposed in this paper is defined as the Android mobile applications and one of the main objectives of the project is to help developers in creating power saving applications using this system.
+\item{The computational device (The Server)}
 
-\subsection{Offloading Solutions}
+	As discussed in \ref{relatedwork}, recent studies and research papers have focused on using the new found Cloud Computing technology in order to handle this role. There are certain advantages provided by this infrastructure including availability of said service, a powerful processing model and the interchangeability of data \cite{kumar2010cloud}, but there are also disadvantages, namely in the fact that the connection used for data transferring may cause a bottleneck when offloading and thus creating a negative user experience.
+	
+	The BLEOffloadingFramework handles the disadvantages by considering an alternative communication link, which a shorter range, but with greater applicability in terms of gain and user experience. Thus, the computational device that the code is offloaded should be a device that is BLE enabled, but presents greater performance in terms of computing power. Types of devices that respect this condition range from Personal Computers with Bluetooth enabled to laptops or other similar machines.
+	
+	For the purpose of this paper, the computational device used in experimental results is another embedded device with the need of a constant energy source. The motivation behind this choice is to demonstrate that any computer like device can run an offloading server and help preserve the battery life of mobile devices.
+
+\end{itemize}
+
+
+	Considering these two agents present in the offloading scenario, appendix \ref{appendix:bleoffloadingframework} refers to the main work flow between devices.
+	
+\section{Offloading Solutions}
 \label{offloadingsolutions}
 
-After defining the objective and the clients of this framework, it is time to define the general offloading methods through which the system achieves its purpose.
+	One of the objectives of this project is to determine several solutions for offloading and task delegation and provide a comparison between these methods. For the BLEOffloadingFramework two methods of code offloading are provided for developers and are described in the following sections.
 
-\begin{enumerate}
+\subsection{Task delegation through Remote method invocation}
 
-\item{\emph{Remote Procedure Call/Remote Method Invocation}}
+	Remote method invocation \cite{downing1998java} for the Java language, or remote procedure call for C/C++, is a model through which applications or programs can access and call methods or procedures that are stored on remote machines. The motivation behind these calls are numerous, from security concerns to availability of subroutines and data between machines.
+	
+	The generic model through which these calls are placed involve setting up a secure connection between the client and the server, transferring the proper method identification and parameters and waiting for the result of that method, a work flow similar to \ref{img:rmi}.
+	
+\fig[scale=0.3]{src/img/RMI.png}{img:rmi}{A generic work flow for Remote Method Invocation}
 
-RPC\cite{RPC} is not a new protocol. With the advent of the Internet, which has become the largest distributed system ever built, several methods of accessing code across different platforms have been described for different uses: from database interrogation across networks to accessing the output of proprietary code in a secure way. The basic definition of RPC is that it's similar to local procedure call in the way that when a section of code desires to call a procedure it would need an address to jump to. In Remote Procedure Call, that address can be on another machine altogether and the system can either wait for the procedure to finish, or, in more complex systems, continue it's execution and receive an event when the call is done. 
+	In an offloading context, remote method invocation represents a way to delegate certain tasks to different machines, thus enabling applications to be more power efficient by not consuming a lot of CPU time. It does have a drawback through the fact that the method requires always online connectivity in order for it to work and produces quite a significant overhead.
+	
+	In order to combat the disadvantages of the classical model, the framework proposed in this project follows a slightly different approach.
+	
+	When creating the application, the developer will note the methods or functions that he wishes to offload. These methods will be present both on the target application and on the offloading server. When offloading is possible in an application, the BLEOffloadingFramework client automatically detects the methods it can offload through this model and creates a request to the server in which it states the method identification and parameters. The server will either accept or reject the request based on its availability and the presence of said method in its database. An example work flow can be seen in \ref{img:tdtrmi}.
+	
+	Using this solution permits applications to run separately, in an offline context and only offloads when the right conditions are met. In the BLE framework, one goal is to offer developers a set of commonly used algorithms that can be used both on the client and server and provide the possibility to switch between client or server processing when the need arises, thus enabling programmers to create energy-efficient applications.
+	
+\fig[scale=0.5]{src/img/TDtRMI.png}{img:tdtrmi}{Work Flow for Task Delegation through Remote Method Invocation}
 
-For offloading purposes, RPC or RMI (the equivalent in object oriented languages) means that the device can effectively use a system that has been implemented and stabilized for some time now in order to execute very processor intensive code. This would be the main advantage regarding this offload technique.
+\subsection{Data binding of loosed coupled systems}
 
-The main disadvantage would be that it is not a very scalable solution. A developer that uses Remote Procedure Calls would have to plan its application in advance and select the exact methods or procedure that he wishes to offload. This sometimes results in duplicate code, as the framework would not be available some times, and would be very hard to maintain.
+	Loosely coupled systems are by definition applications or programs in which all of their components have little or no knowledge of other separate components. The components in such applications communicate through message passing or similar interface based options, where it is not exclusive for one component to know the inner workings of the other. Examples of such applications include applications that rely on web content, where they make asynchronous REST (Representational State Transfer) API calls to web servers in order to obtain data, such as represented in figure \ref{img:loosecoupled}.
+	
+	
+\fig[scale=0.5]{src/img/LooseCoupled.png}{img:loosecoupled}{Example of a loose coupled application that makes a request to a remote web server}
 
-\item{\emph{Loose coupling of systems}}
+Applying this principle of separation of data between components of application, the BLEOffloadingFramework permits the inclusion of developer defined requests in order to obtain a better performance for their applications. The offloading server can launch on demand a new process that acts as a separate component for the application. When a request for that specific application is received, the server passes it to the process, thus assuring bidirectional communication between components in an energy efficient way.
 
-If the previous method relies solely on implementation, this method requires structuring the application in such a way that certain parts are independent from the rest of the system, as shown in figure \ref{looseimage}.
+This is different from method invocation because the component program that runs on the server can handle much more complex operations such as caching data from the Internet, constant processing of information, clustering and much more.
 
-A good example is an application that processes images in order to obtain certain information from it, such as faces or objects. If we are to take into consideration hand held devices without a specialized Graphical Processing Unit, then this algorithm is costly on the CPU. In these cases, it would be much more efficient to send the picture to another device and use its processing power or even GPU.
+\fig[scale=0.5]{src/img/DataBinding.png}{img:databinding}{Example work flow for an application that uses Loose Coupling offloading method}
 
-The drawback of this method is that not all applications are suited for this type of design (such an application that rely solely on device hardware), while the advantage is that it offers a scalable approach to offloading.
+In figure \ref{img:databinding} an example application that uses Loose Coupling offloading is presented. The application's purpose is to show pictures from a certain web server. As such, if offloading is possible it creates a special request to the server in order to see if a fetch picture component is present.
 
-\end{enumerate}
+This component is a separate process that belongs to the server and periodically downloads and caches pictures from the applications web server. If the requested image is already cached in the system, then the process will return as a result that specific image. As such, the mobile application saves energy by bypassing the process of creating a Web API request to a remote server and waiting for the download action to complete.
 
-%\begingroup
-%	\centering
-%	\includegraphics[scale=0.5]{CoupledLoose.png}
-%	\captionof{figure}{Tight and Loose Coupled systems\cite{wikitight}}\label{looseimage}
-%\endgroup
-
-\subsection{Data flow and main agents}
-\label{dataflow}
-
-In a general Offloading Framework three components can be correctly identified: the device that needs to offload its work, the communication channel and the the device that helps boost performance and receives the work to be offloaded.
-%\TODO Name the ofloadee and the ofloaded
-
-The system proposed in this paper uses for communication a low power consumption implementation of the Bluetooth technology, called Bluetooth Low Energy \cite{BLE2}. This technology permits a high throughput of data to be transferred wireless with relatively low energy consumption over short distances ( below 10 meters ). The benefit the BLE communication brings is that the channel used has a very low impact on the system itself \cite{BLE}, but it has an innate drawback in the fact that it has a short range.
-
-In order to mitigate this drawback, in this framework the device that provides the processing power is a small System on a Chip device that can either lend its power to mobile devices or act a gateway to other more powerful systems. The benefits for adding an intermediary for offloading solutions is that it keeps the simple goal of preserving battery power on the mobile device. The SoC is a small computer, without a battery that can be positioned almost anywhere: in a home, public transportation stations or work environments. By offering the possibility to access different processing power nodes would significantly reduce the mobile devices battery consumption.
-
-Moreover, the implementation of the system permits interchangeability between the client and server devices. As such, if a device permits it, it can act as a server for another device, and thus managing to share some of the resources. The model proposed here will assume that the client is a mobile device based on the Android OS, while the server is a SoC, specifically a RaspberryPI (An ARM GNU/Linux box for \$25).
-
-In a first stage, when a piece of code that can be offloaded is detected, the client device will scan for potential offloading nodes. If such a node is detected, it will try to connect and create a network between the two devices. Once the connection is established, the client will send it's offloading request, through either of the aforementioned methods. The server will respond with either request acknowledge or busy.
-
-The server can accept a number of connections and requests per time frame, in order to not burden itself and thus becoming a bottle neck for the system as a whole. Once the request has been acknowledged and processed, the results will be sent back to the mobile device, depending on the offload method that is used. An exemplification of this data flow can be view in figure \ref{btoffload}.
+This method is suited for application that requires constant Internet connection for it's content, so that instead of always updating it will serve a cached version, which is much faster and in most cases, just as accurate.

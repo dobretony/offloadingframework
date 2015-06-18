@@ -19,6 +19,7 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -228,8 +229,10 @@ public class OffloadService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
+
+    private final IBinder mBinder = new OffloadServiceBinder();
 
     public boolean isOffloadingPossible(PackageManager packageManager){
         //check if device is compatible with Bluetooth LE
@@ -238,6 +241,10 @@ public class OffloadService extends Service {
         //check if bluetooth is enabled
         if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             Log.i(LOG_NAME, "Bluetooth is not enabled. Enable Bluetooth in your application.");
+            result = false;
+        }
+
+        if(offloadSocket == null || !offloadSocket.isConnected()){
             result = false;
         }
 
@@ -450,7 +457,6 @@ public class OffloadService extends Service {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
-
             switch(newState){
                 case BluetoothProfile.STATE_CONNECTED:
                     Log.d(LOG_NAME, "STATE_CONNECTED.");
@@ -468,6 +474,14 @@ public class OffloadService extends Service {
 
         }
     };
+
+    public class OffloadServiceBinder extends Binder {
+        public OffloadService getService(){
+            return OffloadService.this;
+        }
+
+    }
+
 
 
 }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/classes.jar"
+        jumboMode="false"
+        revision="23.0.0 rc2"
+        sha1="1ee588ff2c4daf7b97c1cbf922a6c7f027285c2f">
+        <dex dex="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/pre-dexed/debug/classes-f7cb5c4173e3316f1e71ead58662c186122a6c87.jar" />
+    </item>
+    <item
+        jar="/opt/android-sdk/extras/android/m2repository/com/android/support/support-annotations/22.2.0/support-annotations-22.2.0.jar"
+        jumboMode="false"
+        revision="23.0.0 rc2"
+        sha1="66b42a1f3eb7676070b7ef7f14b603483aecbee1">
+        <dex dex="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/pre-dexed/debug/support-annotations-22.2.0-8a6fb6497f38678b44fa8d3ad996aafd0332c129.jar" />
+    </item>
+    <item
+        jar="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/22.2.0/jars/classes.jar"
+        jumboMode="false"
+        revision="23.0.0 rc2"
+        sha1="73753982da6bde518f3a4c6b372749981d14d1a0">
+        <dex dex="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/pre-dexed/debug/classes-d89b25d9efa317bc972fb23f9c56781e08229ab0.jar" />
+    </item>
+    <item
+        jar="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/exploded-aar/PhotoFeed/offloadlibrary/unspecified/jars/classes.jar"
+        jumboMode="false"
+        revision="23.0.0 rc2"
+        sha1="7cd4dfafda06fdd32690d2d311482fcce62b00f8">
+        <dex dex="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/pre-dexed/debug/classes-0d462c3dc026957ff6cd36861c4dad104c879df4.jar" />
+    </item>
+    <item
+        jar="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/libs/internal_impl-22.2.0.jar"
+        jumboMode="false"
+        revision="23.0.0 rc2"
+        sha1="57f2ab85c164ff1676ec64dee787981c046fab79">
+        <dex dex="/home/tony/Projects/offloadingframework/client/PhotoFeed/PhotoFeed/app/build/intermediates/pre-dexed/debug/internal_impl-22.2.0-0439b1d3089e0e0a9f58ca1b57f155d1c945073c.jar" />
+    </item>
+
+</items>

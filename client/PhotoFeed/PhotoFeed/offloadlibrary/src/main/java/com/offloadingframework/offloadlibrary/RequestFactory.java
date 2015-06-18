@@ -58,7 +58,7 @@ public class RequestFactory {
             this.output = new char[size];
 
             buffer.getChars(0, size, this.output, 0);
-
+            Log.d("RequestFactory", "Created output for request: " + buffer);
         }
 
         public boolean setMethodName(String name){

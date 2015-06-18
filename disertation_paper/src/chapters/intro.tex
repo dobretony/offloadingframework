@@ -97,9 +97,9 @@ Developers for and of the smart phone platforms have since realized that they ne
 
 Computational offloading\index{offloading} is a technique used to share the processing power of several devices between each other in order to achieve better performance. Code offloading is a technique that has gained a lot of interest recently due to the possibility of using the \textit{System as a Service} architecture of cloud computing in order to offload resource intensive operations to cloud-based surrogates\cite{shiraz2013review}, especially in the case of low-power devices such as smartphones. This technique usually occurs at the code level, where a mobile application may be partitioned such that some of the more process-intensive tasks or algorithms would be run on separate machines. The partitioning can be done either by the developer, statically, or it can be determined at runtime, dynamically, by a simple linear algorithm that measures the cost of data transfer and the potential offloading gain that can be achieved for certain tasks. Because the cost might outweigh the benefit gained, offloading should be considered an optional process preferred in mobile operations that require high amounts of processing time and low amounts of data transferred between devices\cite{kumar2010cloud}. Previous works have also identified that computational offloading is required mainly by applications that implement graphical rendering, image and video processing techniques\cite{cuervo2010maui} \cite{chun2011clonecloud}.
 
-\todo{task delegation}
+Data binding or task delegation is a model that can be considered a form of offloading where developers create an application based on the loose coupled model. These types of application usually do not function without connectivity to other devices and may follow different schema \cite{klein2010access}, one of the most common methodology being Web API calls and thus enriching mobile applications with the power of Web technologies. The main notion of this form of offloading is that instead of doing certain tasks on a mobile device, you create an asynchronous call to another machine that will do the work and then provide a result. It is different from code offloading because the working assumption is that the mobile device cannot do the offloaded task in either a timely fashion or does not have the required technology or security access. A good example of this would the path generation on an online map service, that could take a long time on a mobile embedded device versus a machine in the cloud that has access to caching algorithms and highly performant subroutines.
 
-Following the notion of computational offloading and the need for extended battery life, this paper proposes a system through which the process of code offloading and task delegation can be done efficiently over a low-energy imprint communication channel: Bluetooth Low Energy. \abbrev{BLE}{Bluetooth Low Energy}
+Following the notion of computational offloading with task delegation and the need for extended battery life, this paper proposes a system through which the process of code offloading and task delegation can be done efficiently over a low-energy imprint communication channel: Bluetooth Low Energy. \abbrev{BLE}{Bluetooth Low Energy}
 
 Bluetooth (IEEE 802.15.1) is a technology based on a wireless radio system designed for short-range and low-cost devices in order to replace cables for computer peripherals, such as mice, keyboards, printers, etc. Since it's conception, this standard has seen a wide variety of use and has evolved from it's main purpose of interconnecting peripherals to creating small, wireless, personal area networks (WPAN) that permit advance data transfer such as: file sharing, transmitting TCP/IP packets, data streaming over simulated Serial Ports and other uses.
 
@@ -140,7 +140,32 @@ Experimental results demonstrate that this typical scenario presents an increase
 Because of its lightweight infrastructure and use of low-energy technology, the BLEOffloadingFramework presents a series of advantages over other offloading scenarios. In this paper, the method and implementation of this framework will be presented, together with the context and motivation behind this type of offloading and also the experimental setup used to demonstrate the principles of the framework.
 
 
+\section{Project Objectives}
+\label{objectives}
 
+This thesis proposes a new system for computational offloading and task delegation by providing a seamless method for code and data transferring through Bluetooth Low Energy. The objectives of this project are as follow:
+
+\begin{itemize}
+
+\item{To present a new method for computational offloading with the goal of helping developers create energy efficient applications on mobile platforms.}
+
+\item{To use the low-energy technology of Bluetooth in order to demonstrate the principle of code offloading and task delegation for mobile devices.}
+
+\item{To provide developers of mobile applications with an easy method for implementing offloading over Bluetooth, through the use of an Application Programmable Interface (API). \abbrev{API}{Application Programmable Interface}}
+
+\item{To make use of at least two offloading methods and provide a comparison between them.}
+
+\item{To determine a testing method for use in comparing offloading solutions based on the framework.}
+
+\item{To be scalable in terms of implementation and methodology.}
+
+\item{To be generic in terms of methodology and architecture and thus not be limited to a certain platform or device.}
+
+\item{To be transparent to both developers and users of this framework and to always ask for permission when offloading is possible so that there is no possibility of privacy obstruction.}
+
+\item{To be secure, thus protecting user data and privacy.}
+
+\end{itemize}
 
 
 
