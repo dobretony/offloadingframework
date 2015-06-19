@@ -9,4 +9,5 @@ public class Constants {
     public static final int SEND_OFFLOADING_REQUEST = 2;
     public static final int START_SCANNING = 3;
 
+    public static final int OFFLOAD_MANDELBROT = 4;
 }

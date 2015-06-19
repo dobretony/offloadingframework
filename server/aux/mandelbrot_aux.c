@@ -1,7 +1,10 @@
 #include "mandelbrot.h"
 #include<string.h>
+#include<stdlib.h>
+#include<stdio.h>
 
-void mandelbrot(int iXmax, int iYmax, double zoom, char* result)
+
+void mandelbrot(int iXmax, int iYmax, double zoom, unsigned char* result)
 {
           /* screen ( integer) coordinate */
         int iX,iY;
@@ -33,7 +36,8 @@ void mandelbrot(int iXmax, int iYmax, double zoom, char* result)
         
 
 	/*Create a buffer large enough to hold the data*/
-	result = (char*)calloc(iXmax * iYmax, sizeof(char));
+	result = (unsigned char*)calloc(iXmax * iYmax * 3 + 1, sizeof(unsigned char));
+	printf("Result is a %i size array. %d\n", iXmax * iYmax * 3 * sizeof(unsigned char), sizeof(result) );
 	int buffer_pointer = 0;
 
 
@@ -59,9 +63,9 @@ void mandelbrot(int iXmax, int iYmax, double zoom, char* result)
                             Zx=Zx2-Zy2 + Cx;
                             Zx2=Zx*Zx;
                             Zy2=Zy*Zy;
-                        };
+                        }
                         /* compute  pixel color (24 bit = 3 bytes) */
-                        if (Iteration==IterationMax)
+                     if (Iteration==IterationMax)
                         { /*  interior of Mandelbrot set = black */
                            color[0]=0;
                            color[1]=0;
@@ -72,15 +76,21 @@ void mandelbrot(int iXmax, int iYmax, double zoom, char* result)
                              color[0]=0; /* Red*/
                              color[1]=0;  /* Green */ 
                              color[2]= (Iteration | Iteration << 8);/* Blue */
-                        };
+                        }
                         /*write color to the buffer*/
                         //fwrite(color,1,3,fp);
-			sprintf(result + buffer_pointer, "%s ", color);
-			buffer_pointer += strlen(color);
+			//sprintf(result + buffer_pointer, "%s", color);
+			result[buffer_pointer + 0] = color[0];
+			result[buffer_pointer + 1] = color[1];
+			result[buffer_pointer + 2] = color[2];
+			buffer_pointer += 3;
+			//printf("buffer_pointer:%i\n", buffer_pointer);
+			//buffer_pointer += sizeof(color);
 
                 }
         }
- 
+	result[buffer_pointer] = '\n';
+	printf("Mandelbrot result has size %i: %s \n", buffer_pointer, result); 
 
 }
 

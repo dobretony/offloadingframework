@@ -34,9 +34,9 @@ public class Feed extends Activity {
     protected void onResume() {
         super.onResume();
 
-        //Intent intent = new Intent(this, OffloadService.class);
-        //startService(intent);
-        doBindService();
+        Intent intent = new Intent(this, OffloadService.class);
+        startService(intent);
+        //doBindService();
 
         ImageView view =  (ImageView)findViewById(R.id.image_view);
 
@@ -60,9 +60,9 @@ public class Feed extends Activity {
     protected void onPause() {
         super.onPause();
 
-        //Intent intent = new Intent(this, OffloadService.class);
-        //stopService(intent);
-        doUnbindService();
+        Intent intent = new Intent(this, OffloadService.class);
+        stopService(intent);
+        //doUnbindService();
 
     }
 
@@ -91,6 +91,7 @@ public class Feed extends Activity {
 
     private void doBindService(){
         bindService(new Intent(Feed.this, OffloadService.class), mConnection, Context.BIND_AUTO_CREATE);
+        Log.d("Feed", "Did bind service.");
     }
 
     private void doUnbindService(){
@@ -105,7 +106,7 @@ public class Feed extends Activity {
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            mBoundService = ((OffloadService.OffloadServiceBinder)service).getService();
+            //mBoundService = ((OffloadService.OffloadServiceBinder)service).getService();
             Toast.makeText(Feed.this, "Succesfully binded offloading service.", Toast.LENGTH_LONG);
         }
 

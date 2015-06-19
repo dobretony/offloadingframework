@@ -10,7 +10,7 @@ import java.util.HashMap;
  */
 public class RequestFactory {
 
-    public abstract class OffloadRequest{
+    public static abstract class OffloadRequest{
 
         private RequestType mType = null;
         protected char[] output = new char[100];
@@ -28,7 +28,7 @@ public class RequestFactory {
 
     }
 
-    public class RMIRequest extends OffloadRequest{
+    public static class RMIRequest extends OffloadRequest{
 
         private HashMap<String, Object> parameters = null;
         private String methodName = null;
@@ -96,6 +96,22 @@ public class RequestFactory {
             return true;
         }
 
+    }
+
+
+
+    public static OffloadRequest createRequest(RequestType type)
+    {
+        switch(type){
+            case REQUEST_LOOSE:
+                break;
+            case REQUEST_RMI:
+                return new RequestFactory.RMIRequest();
+            default:
+                break;
+        }
+
+        return null;
     }
 
 

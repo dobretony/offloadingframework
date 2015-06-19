@@ -2,6 +2,8 @@ package com.offloadingframework.offloadlibrary;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -64,6 +66,8 @@ public class OffloadService extends Service {
     private PrintWriter socketPrintWriter = null;
     private BufferedReader socketBufferedReader = null;
 
+    private NotificationManager mNotificationManager;
+
     private static UUID uuid = UUID.fromString("6686416b-aa45-798f-1747-680bd1c4a59b");
 
     /**
@@ -76,13 +80,11 @@ public class OffloadService extends Service {
                 @Override
                 public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
                     Log.d(LOG_NAME, "Found advertisement: " + rssi + " " + device.getAddress());
+                    handleSocket(device);
                 }
             };
 
-    private ScanCallback mScanCallback;
-
-    {
-        mScanCallback = new ScanCallback() {
+    private ScanCallback mScanCallback = new ScanCallback() {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
                 Log.d(LOG_NAME, "Found advertisement: " + result.toString());
@@ -108,7 +110,9 @@ public class OffloadService extends Service {
                 if (buffer.toString().contains("48 45 4C 4C 4F 57 4F 52 4C")) {
 
                     BluetoothDevice device = result.getDevice();
-                    //handleSocket(device);
+                    handleSocket(device);
+
+                    /*
                     device.fetchUuidsWithSdp();
 
                     try {
@@ -130,7 +134,7 @@ public class OffloadService extends Service {
                     Log.d(LOG_NAME, "Found server and succesfully connected to it.");
                     foundServer = true;
                     mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
-
+                    */
 
 
                 }
@@ -173,7 +177,7 @@ public class OffloadService extends Service {
                 foundServer = false;
             }
         };
-    }
+
 
 
     private Runnable scanForServerRunnable = new Runnable() {
@@ -204,6 +208,7 @@ public class OffloadService extends Service {
         mServiceLooper = thread.getLooper();
         mServiceHandler = new OffloadServiceHandler(mServiceLooper);
 
+
         Message msg = mServiceHandler.obtainMessage();
         msg.arg1 = Constants.START_SCANNING;
 
@@ -220,10 +225,19 @@ public class OffloadService extends Service {
         return Service.START_NOT_STICKY;
     }
 
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        mNotificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mServiceHandler.removeCallbacks(scanForServerRunnable);
+        if(mServiceHandler != null)
+            mServiceHandler.removeCallbacks(scanForServerRunnable);
         Log.d(LOG_NAME, "Service is destroyed.");
     }
 
@@ -231,6 +245,22 @@ public class OffloadService extends Service {
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
+
+
+    private void showNotification() {
+
+        CharSequence text = "Offloading is possible.";
+
+        Notification notification = new Notification.Builder(this)
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .setContentTitle("Offloading Service.")
+                .setContentText("System has detected BLE offloading is possible.")
+                .setSmallIcon(R.drawable.notification_template_icon_bg)
+                .setAutoCancel(false).build();
+        mNotificationManager.notify(1, notification);
+
+    }
+
 
     private final IBinder mBinder = new OffloadServiceBinder();
 
@@ -310,9 +340,13 @@ public class OffloadService extends Service {
 
         }
 
-        Log.d(LOG_NAME, "Found server and succesfully connected to it.");
+        Log.d(LOG_NAME, "Found server and succesfully connected to it!!!!!");
+        showNotification();
         foundServer = true;
-        mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
+        //mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
+        mServiceHandler.removeCallbacks(sanityCheckRunnable);
+        mServiceHandler.removeCallbacks(scanForServerRunnable);
+        offloadMandelbrot(1600, 1024);
     }
 
 
@@ -393,27 +427,28 @@ public class OffloadService extends Service {
 
     public void socketCheckSanity(){
 
-        writeToSocket("PING");
+        synchronized (offloadSocket) {
+            writeToSocket("PING");
 
-        char[] buffer = new char[100];
-        try {
+            char[] buffer = new char[100];
+            try {
 
-            socketBufferedReader.read(buffer, 0, 100);
-            String stringBuffer = new String(buffer);
-            if(!stringBuffer.equals("ACK"))
+                socketBufferedReader.read(buffer, 0, 100);
+                String stringBuffer = new String(buffer);
+                if (!stringBuffer.equals("ACK"))
+                    foundServer = false;
+
+            } catch (Exception e) {
                 foundServer = false;
+            }
 
-        } catch (Exception e) {
-            foundServer = false;
+            if (!foundServer) {
+                cleanUpSocket();
+            } else {
+                Log.i(LOG_NAME, "Server ACK received.");
+                mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
+            }
         }
-
-        if(!foundServer){
-            cleanUpSocket();
-        }else{
-            Log.i(LOG_NAME, "Server ACK received.");
-            mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
-        }
-
     }
 
     private static long PING_TIME = 5000;
@@ -446,11 +481,62 @@ public class OffloadService extends Service {
                 case Constants.START_SCANNING:
                     mServiceHandler.post(scanForServerRunnable);
                     break;
+                case Constants.OFFLOAD_MANDELBROT:
+                    break;
                 default:
                     break;
             }
 
         }
+    }
+
+    //do not comment on the horrible thing that this code is. It is 2 o'clock in the morning and i just need it to work
+    public static int widthS, heightS;
+
+    private void offloadMandelbrot(int width, int height) {
+
+        widthS = width;
+        heightS  = height;
+
+        RequestFactory.RMIRequest request = (RequestFactory.RMIRequest)RequestFactory.createRequest(RequestType.REQUEST_RMI);
+
+        request.setMethodName("mandelbrot");
+        request.addParameter("width", width);
+        request.addParameter("height", height);
+
+        request.buildRequest();
+
+        writeToSocket(request.getOutput());
+
+        Runnable waitForMandelbrot = new Runnable() {
+            @Override
+            public void run() {
+
+                synchronized (offloadSocket) {
+
+                    int size = widthS * heightS;
+                    char[] buffer = new char[size];
+                    Log.d(LOG_NAME, "Waiting for a buffer of size: " + size);
+
+                    try {
+
+                        socketBufferedReader.read(buffer, 0, size);
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    Log.d(LOG_NAME, "YUHUUUUUUU.");
+
+                }
+
+
+
+            }
+        };
+
+        mServiceHandler.post(waitForMandelbrot);
+
     }
 
     BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
@@ -476,7 +562,7 @@ public class OffloadService extends Service {
     };
 
     public class OffloadServiceBinder extends Binder {
-        public OffloadService getService(){
+        OffloadService getService(){
             return OffloadService.this;
         }
 
