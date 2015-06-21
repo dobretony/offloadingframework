@@ -1,18 +1,107 @@
 \chapter{Experimental Results}
 \label{chapter:results}
 
-\todo{NOTE ON FIRST DRAFT: This is a stub and will be replaced.}
+After defining the architecture of the BLEOffloadingFramework and how it is implemented, in this chapter we will define a testing methodology that can be used to see the benefit of using offloading over Bluetooth in applications.
 
-In order to validate the offloading system, a series of performance and stress tests are the determining factor. In this chapter, the testing methodologies are described for the BLEOffloadFramework.
+First off we have to define the terms used in calculating the gain through offloading. Let \(\Delta\tau\) be the gain of power resulted from using offloading instead of normal work on the current system. \(\Delta\tau\) is expressed in energy consumption over a specific time period and is defined as the energy consumption over a certain period of time required to perform a task (\(\tau_{local}\)) on a given machine minus the energy required on the same machine to send that task over to another machine and receive the result (\(\tau_{offload}\)). As such:
 
-\subsection{Test setup}
+\begin{align*}\label{gainequation}
+\delta\tau = \tau_{local} - \tau_{offloaded}
+\end{align*}
 
-In order to offer conclusive data, the test setup contains different types of mobile devices that can benefit from the Offloading Framework, in this case, two smart phone devices from different producers with different specifications. Both devices are using the Android Operating System, version 4.4, in order to benefit from the Bluetooth Low Energy technology.
+Both \(\tau_{local}\) and \(\tau_{offloaded}\) are experimental variables and should be expressed in the energy it took to perform a certain action over a period of time (this is the measurement of power). In order to calculate the gain in a more general fashion that does not depend on the device that it runs on, we will consider the amount of energy over time as being expressed in battery usage, a relative term used in smatphones and other similar devices to express the amount of battery power left in their devices. This variable is expressed in the percentage of energy left in the battery versus the energy contained in the battery at full capacity. In this case, \(\tau_{local}\) is expressed in the relative terms of:
 
-Both devices are charged to maximum capacity, as indicated by the Android notification system and run the same applications. Example applications include simple programs that are computational intensive, such as image processing applications or route calculating algorithms, which are common algorithms among mobile devices.
+\begin{align*}
+\tau_{local} = \tfrac{Percentage\ of\ battery}{Period\ of\ time\ while\ task\ has\ run}
+\end{align*}
 
-The idea is to expose the device to a series of tests, conducted using UIAutomator, a testing tool for Android that emulates user behavior. The test sequence repeats a pattern of user touch inputs until the devices receives a low battery notification, after which the time it took for the device to deplete it's battery is measured as the time between the start of the UIAutomator test case and the low power event.
+Because we expresses this in percentages, the calculations are not exact, but by repeating the task and ignoring the little overhead caused by the initialization of variables or stack calling, we can extend the period of time to a magnitude of hours. This permits us to show the larger impact upon the user with ease.
 
-Several test cases are distinguishable: The case where offloading is disabled and when offloading is enabled using different methods. The results of these test cases will roughly predict the power consumption of the devices in real life scenarios and the initial data can be extrapolated in order to predict the overall gain of using the offloading system.
+In the same style, we have to define \(\tau_{offload}\) as:
 
-These tests should reveal that using the framework described in section \ref{architecture} will have an impact on energy consumption, in the sense that it takes a longer time to reach the low-battery notification. Exact empirical results will be available once the API for Android applications is completed.
+\begin{align*}
+\tau_{offload} = \tau_{BLEConnectionHandling} + \tau_{WaitPeriod} + \tau_{BLETransfer}
+\end{align*}
+
+\begin{align*}
+\tau_{BLEConnectionHandling} = \tfrac{Percentage\ of\ battery}{The\ amount\ of\ time\ the\ connection\ is\ alive\ and\ is\ managed} 
+\end{align*}
+\begin{align*}
+\tau_{WaitPeriod} = \tfrac{Percentage\ of\ battery}{The\ amount\ of\ wait\ time\ for\ offloading\ to\ be\ done} 
+\end{align*}
+\begin{align*}
+\tau_{BLETransfer} = \tfrac{Percentage\ of\ battery}{The\ amount\ of\ time\ it\ takes\ for\ the\ data\ to\ be\ transferred}
+\end{align*}
+
+With these notions in mind we will first explain the experimental setup with an example offloading scenario based on task delegation and afterwards determine the impact of the above variables in a comparison between methods.
+
+\section{Framework Test Setup and Results}
+
+In order to determine the experimental gain of the framework a test setup has been devised for the BLEOffloadFramework. 
+
+This setup uses as a test case the example application provided in Appendix \ref{appendix:clientimplementation}. The application shows to the user an image generated with the Mandelbrot set \cite{mandelbrot2013fractals} with the set number of pixels for width and height, scaled to fit on the device screen.
+
+The same algorithm is provided through task delegation on the offloading server and is accessible by the application through the \textbf{TASK_MANDELBROT} message type provided to the offloading service.
+
+In this setup we will permit an external program to perform user behavior type clicks on the application through a testing process called Instrumentation \cite{kropp2010automated}. "Instrumentation testing allows you to verify a particular feature or behavior with an automated JUnit TestCase. You can launch activities and providers within an application, send key events, and make assertions about various UI elements." \footnote{\url{http://www.netmite.com/android/mydroid/development/pdk/docs/instrumentation_testing.html}} This permits us to do the same task ( generate the Mandelbrot set) over a period of two hours. During this time we will measure the battery charge by registering a BroadcastReceiver for battery level and logging every two minutes.
+
+During the period, the device will be put in a special mode, called "Airplane Mode" in which all data communication is disabled, in order to minimize the impact of the system on the test results. Bluetooth can be enabled in this mode separately and is enabled during the offload test, thus accounting for the energy consumption of the Bluetooth subsystem of Android.
+
+We will discuss two main cases:
+
+\begin{enumerate}
+\item{Generating Mandelbrot with offloading disabled}
+	This will cause a separate thread to be launched inside the application process that will generate a Mandelbrot of 1600x1024 pixels with an iteration mark of 100.
+\item{Generating Mandelbrot with offloading enabled}
+	This will cause the OffloadService to begin its activity of scanning for an offload server, connecting to it and send a request for a Mandelbrot set with the specified parameters.
+\end{enumerate}
+
+The results of running this setup is presented in \ref{img:comparisondata}. 
+
+To note is the fact that although this setup was tailored to a specific test application, the setup steps remain the same for any application developed using the BLEOffloadFramework. These steps are as follows:
+
+\begin{enumerate}
+\item{Implement application with both offloading and local implementations.}
+
+\item{Create a common user scenario that would be used inside the application.}
+
+\item{Implement the user case into a JUnit test case using the Instrumentation Test Framework of Android.}
+
+\item{Implement inside the test case or in a separate dummy service, a BroadcastReceiver for battery charge updates.}
+
+\item{Run the test for a predefined amount of time that should show impact. On lower end devices, 2 hours is sufficient, while on higher devices more than 8 hours is advised.}
+
+\item{Compare results for both offloading enabled and disabled.}
+\end{enumerate}
+
+\fig[scale=0.6]{src/img/comparisonofbatteryusage.png}{img:comparisondata}{Comparison between battery usage of the test setup during a period of two hours with offload enabled and disabled.}
+
+Figure \ref{img:comparisondata} has been obtained by running the test setup on tablet with a dual core 2 Ghz processor with 1Gb of RAM during a period of two hours with sampling of 2 minutes.
+
+We can define the gain \(\Delta\tau\) as the difference between the battery percentage when offloading is enabled and when offloading is disabled, during the whole period of time. As such, even if at the beginning no difference can be recognized, while we progress in time the difference becomes more and more feasible.
+
+The low difference in battery usage can be attributed to the fact that during offloading, the Bluetooth system is enabled and this provokes more CPU usage and communication between different subsystems.
+
+Also noteworthy is the fact that during the 2 hours period, the Mandelbrot set was generated 1430 times in the case of local computation, versus 1200 times when offloading said computation to a remote server. This is because the applications standard approach was to wait for the image to be completed on the offload server and then shown on the screen through the use of the Bitmap and ImageView API of Android. This downtime has been noted as \(\tau_{WaitPeriod}\) in our previous declarations and can be mitigated when offloading through the method of data binding.
+
+Because in the loose coupled model for offloading the server either already has data available, in the case of caching, or it needs very few computation overall. As such the time required for waiting for data to become available is very small, which leads to an increased \(\tau_{WaitPeriod}\), thus maximizing the gain overall. To note is the fact what when doing task delegation, the local gain is higher for that specific task, even accounting for the wait period. The purpose of task delegation is to save as much battery life, even if it takes a bit longer for the task to complete.
+
+Because of the advantage the loose coupled method brings, it also has to be considered when developers are using the BLEOffloadingFramework. 
+
+When considering using one method or the other there are some guidelines to consider:
+
+\begin{itemize}
+
+\item{The object that has to be offloaded}
+	
+	When designing the application with offloading in mind, it is important to note the offloading target. If the target is a task that needs to be performed rarely, but it requires a lot of CPU time in order to be accomplished, it is best to use the task delegation solution in order to maximize the local offloading gain. If the target requires constant access to data, the overall gain can be higher if the loose coupled solution is used.
+	
+\item{Development speed}
+
+	BLEOffloadingFramework offers a multitude of tasks and algorithms already implemented in the server. As such, it is much faster to implement offloading through task delegation than creating a new process to be run by the offload server, as is the case for loose coupled solutions.
+
+\item{Availability of data}
+
+	In the end it goes down to data: does the application needs unprocessed data needs to be fetched from the internet and then presented to the user? does that data needs to be processed first? can it be cached for future use by other offloading clients? If the design is data centric, then the loose coupled method is probably best, while as if processing is involved, then task delegation might be the solution.
+
+\end{itemize}

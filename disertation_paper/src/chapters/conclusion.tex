@@ -1,10 +1,45 @@
 \chapter{Conclusion and Future Development}
 \label{chapter:conclusion}
 
-\todo{NOTE ON FIRST DRAFT: This is a stub and will be expanded upon.}
+Mobile phone battery life has been the subject for debate among many enthusiasts and technicians alike, but not many have found a sustainable solution for long lasting smartphone capabilities. In this paper such a solution was proposed, through the use of the BLEOffloadingFramework.
 
-Consuming less energy has been a prime focus in mobile communities since the development of high end smart phone devices has exceeded the technological advancement of batteries.
+Whereas most offloading frameworks currently being developed use the highly powerful cloud platforms in order to transfer computational power, this presents a limitation through the fact that it may take a long time for code or data to move from the mobile device to the cloud engine and back again.
 
-Offloading computational intensive code from one device to another is a method through which power saving can be achieved and the BLEOffloadingFramework is one of many solutions available to handle this problem. This system offers a complete solution for Android application developers to bring new value to their programs and to receive more out of the mobile environment. The solutions presented here are scalable, designed to be easy to use and offer a new dimension when it comes to programming for the Internet Of Things.
+In order to mitigate this limitation, the BLEOffloadingFramework uses Bluetooth Low Energy a communication channel between devices, thus mitigating the limitations of Internet connectivity and bringing offloading in a more local, well defined space. Besides the gain brought through offloading, this framework also presents a number of advantages to developers and users alike, such as:
 
-Improvements to the system can also bring a new form of distributed performance boost, because, even though the case for a stable server and mobile client was discussed, the framework can be made to work with other mobile devices as well, permitting users to share their power between them in a seamlessly and easy way.
+
+\begin{itemize}
+
+\item{It represents a new method of code offloading through a different communication channel.}
+
+\item{It uses Bluetooth Low Energy, so that the overall energy consumption for Bluetooth Smart devices is heavily decreased.}
+
+\item{Using this framework has shown a gain in battery life even for the simplest of applications.}
+
+\item{It provides two different offloading methods and use cases for both of them.}
+
+\item{It is simple to use and implement as a means of communicating data efficiently between devices.}
+
+\item{It provides a test reference setup in order to present the actual gain the framework brings.}
+
+\item{It is scalable for different machines and platforms.}
+
+\item{It is transparent, providing notifications for the user whenever it will try a connection to an offload server.}
+
+\end{itemize}
+
+As such, the BLEOffloadingFramework presents to be a new method of doing offloading and even though the net gain is not as big as other available platforms or offloading systems, it represents a fresh way to use the power of Bluetooth Low Energy in order to augment already established concepts.
+
+In the future, the BLEOffloadingFramework needs to implement even more features:
+
+\begin{itemize}
+
+\item{Portability - the framework should be available on other platforms as well, one main step would be to port the offloading server to a mobile device itself, in order to promote the concept of mobile distributed offloading, where devices can share code between them in order to achieve a more expensive task.}
+
+\item{Security -  at the moment the framework relies on the encoding and decoding steps in order to provide security of data between devices, but this should change to a more secure channel and investigate the impact of using a more complex socket in the framework.}
+
+\item{Efficiency - the framework requires a more efficient message passing system and should probably benefit more if this was changed completely to a GATT service characteristic reading/writing.}
+
+\item{Content -  in order to provide developers with more and more options, content has to be added to the framework in terms of new tasks that can be delegate or third party applications that can be launched.}
+
+\end{itemize}

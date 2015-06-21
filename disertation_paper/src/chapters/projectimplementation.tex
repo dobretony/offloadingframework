@@ -74,7 +74,7 @@ For the case of Data Binding solution, there is a special message type of messag
 
 As previously stated, the communication between the offload service and the server is done through a RFCOMM socket managed by the client. In order to speed up the process, all the control messages sent through the socket are of the byte primitive type. All the user data is converted to byte form before sending, in a process called encoding. The server decodes the byte string that is sent through the channel and processes the request. All the results or responses sent back to the client are also encoded. This strategy permits the encoding and decoding process to also contain data archiving steps, thus minimizing the time it takes to transfer data across the RFCOMM channel.
 
-An example offloading call on a test application is present in appendix \ref{appendix:offloadclientexample}.
+An example offloading call on a test application is present in appendix \ref{appendix:clientimplementation}.
 
 \pagebreak
 
@@ -110,68 +110,9 @@ The BLEOffloadingFramework server project is written in the C language and has t
 
 The server needs to be started with root privileges, as it relies on communication with the Bluetooth kernel module and needs access to the HCI device present on the machine. A special user can be created that has access to the Bluetooth subsystem and such avoid the risk of this server causing security concerns.
 
-When it first boots up, the offload server will try to set the parameters for advertising by calling through HCI the BT device present on the machine. If this is successful, it will then activate the advertising feature on the chipset with those specific parameters. After this phase, it will register a Low Energy GATT service that describes the services provided by the server through Bluetooth and also registers a new service with the Service Discovery Protocol (SDP) \abbrev{SDP}{Service Discovery Protocol}, a protocol used by classic Bluetooth in order to identify the capabilities of devices in a piconet. Examples of both these services are present in appendix \ref{appendix:gattservice} and appendix \ref{appendix:sdpservice}.
+When it first boots up, the offload server will try to set the parameters for advertising by calling through HCI the BT device present on the machine. If this is successful, it will then activate the advertising feature on the chipset with those specific parameters. After this phase, it will register a Low Energy GATT service that describes the services provided by the server through Bluetooth and also registers a new service with the Service Discovery Protocol (SDP) \abbrev{SDP}{Service Discovery Protocol}, a protocol used by classic Bluetooth in order to identify the capabilities of devices in a piconet.
 
-After registering these services, the initialization of the RFCOMM socket is performed. This socket is set in the \textit{listen} state and we use the Linux \textit{select}\cite{ostrowski2000mechanism} mechanism in order to perceive new events on that socket. The \textit{select} mechanism "allows event monitoring on multiple file descriptors, waiting until one or more of the files descriptors become ready for some class of I/O operations"\footnote{select - Linux ManPages (the output of "man select" on any Linux system)}. As such, in the main loop of the server application a \textit{select} is performed on the rfcomm socket with a maximum number of "child" file descriptors for each subsequent client socket connected. The code behind this operation is described in Listing \ref{lst:servermainloop}.
-
-\lstset{language=c,caption=Main Loop of BLEOffloadingFramework server, label=lst:servermainloop}
-\begin{lstlisting}
-void start_main_loop_rfcomm(){
-    int result = -1;
-    int i = 0;
-    fd_set afds;
-    fd_set rfds;
-    struct timeval tv;
-    int clientRfSock;
-    struct sockaddr_rc rem_addr = {0};
-    socklen_t rfcommConnInfoLen;
-    socklen_t sockAddrLen;
-    bdaddr_t clientBdAddr;
-
-    printf("Starting main loop and listening for rfcomm sockets..\n");
-    while(1){
-        FD_ZERO(&afds);
-        FD_SET(rfcomm_socket, &afds);
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-
-        result = select(FD_SETSIZE, &afds, NULL, NULL, &tv);
-        if(result < 0){
-          printf("select doesn't work.\n");
-          break;
-        }
-
-        for(i = 0; i < FD_SETSIZE; ++i)
-          if(FD_ISSET(i, &afds)){
-             if ( i == rfcomm_socket){
-                /*Connection Request on original socket */
-                sockAddrLen = sizeof(rem_addr);
-                clientRfSock = accept(rfcomm_socket, (struct sockaddr *) &rem_addr, &sockAddrLen);
-                if(clientRfSock < 0){
-                  printf("Error accepting a socket."); break;}
-                  FD_SET(clientRfSock, &afds);
-                }
-                else{
-                  /* If socket is not available do not read from it or handle requests */
-                  if(socket_available(i) == 0) continue;
-                  
-                  /*Data arriving on already connected socket*/
-                  char buffer[MAX_BUFFER_SIZE];
-                  
-                  mutex_lock(client_mutex(i));
-                  int read_bytes = read(i, buffer, MAX_BUFFER_SIZE);
-                  mutex_unlock(client_mutex(i))
-                  
-                  printf("%s\n", buffer);
-                  handle_request(i, buffer, read_bytes);
-                }
-          }
-          
-          clean_up_fds();
-        }
-}
-\end{lstlisting}
-
+After registering these services, the initialization of the RFCOMM socket is performed. This socket is set in the \textit{listen} state and we use the Linux \textit{select}\cite{ostrowski2000mechanism} mechanism in order to perceive new events on that socket. The \textit{select} mechanism "allows event monitoring on multiple file descriptors, waiting until one or more of the files descriptors become ready for some class of I/O operations"\footnote{select - Linux ManPages (the output of "man select" on any Linux system)}. As such, in the main loop of the server application a \textit{select} is performed on the rfcomm socket with a maximum number of "child" file descriptors for each subsequent client socket connected. The code behind this operation is described in appendix \ref{appendix:servermainloop}.
 
 Noteworthy is the \textit{handle_request()} near the end of the main loop, as this where the process of decoding and selecting the request happens. Once in this stage the stage, the server application decodes the received message and creates an appropriate response to the client.
 
