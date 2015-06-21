@@ -1,30 +1,196 @@
 \chapter{Project Implementation}
 \label{chapter:implementation}
 
-\todo{NOTE ON FIRST DRAFT: This is a stub and will be expanded upon.}
+With the scope of helping developers create power efficient applications through the use of offloading and to demonstrate the inherent gain of code offloading and data binding through Bluetooth Low Energy in this chapter we will present the BLEOffloadingFramework. This framework was constructed for use with the Android Operating System and provides an Application Programmable Interface (API) for developers to use inside their applications in order to offload their more CPU-intensive tasks to a BLE-capable Linux machine.
 
-In order to achieve the desired performance and low energy consumption, an offloading software framework is proposed. The BLE Offloading Framework is structured as a client-server architecture that uses Bluetooth Low Energy technology in order to communicate.
 
-\subsection{The client - Android Framework}
+\section{The client - Android Framework}
 
-The BLEOffloadingFramework offers an Application Programmable Interface (API) for developers of applications on Android devices. Using the Bluetooth Low Energy framework available since Android version 4.2 these devices can scan and connect to other devices, without an impact on performance or power consumption.
+As previously state, Android is a mobile operating system tailored specifically for smartphones and other embedded devices, such as TVs or wearables, that offers a wide range of features for users and developers alike. In order to create an application for these devices, a developer may use the Software Development Kit (SDK) \abbrev{SDK}{Software Development Kit} that is offered for every version of Android.
 
-At the current state of the project the framework represents a test application that connects through BLE to the server side program and sends small packets of data that mimics data transfer over a period of time.
+The BLEOffloadingFramework uses the Android SDK version 20 and upwards, as this API level has the features needed for effective Bluetooth Low Energy communication.
 
-%The offloading system is designed to offer methods through which a developer can register certain methods to be offloaded through RPC/RMI ( in which the application waits for a certain output ) or through the Loose coupling method ( where the application will be notified when results are available ). The users must select the desired method when first designing the application, but theoretical results show that a combination between the two methods seems to offer the best performance: perform an RPC call to the offload node on a separate thread and wait for the results in parallel to other tasks. BLEOffloadingFramework will offer methods and callbacks written in the Java programming language in order to simplify the task of offloading methods.
+Because we are discussing a system that is to be used by developers, one prime objective is to be modular: the framework must not interfere with the application and must be coupled or decoupled from the application with ease. The BLEOffloadingFramework presents itself as a java library that developers can integrate into their application, without changing too much the actual code. This library contains a class called OffloadService, which is an Android Service that provides:
 
-%In the loose coupling scenario, the developer creates a serializable class structure, by inheriting a class from the framework or implementing an interface and annotate methods of that class that can be offloaded. In this case, when the framework detects the right offloading conditions ( there is an offload node available and ready ) it will request and send that class through serialization to the server, which will perform the necessary calculations and return a result.
+\begin{itemize}
 
-%Regarding the RPC/RMI method, the framework manages the methods that are marked for offloading and check if the offloading node is available and if it has that method available. In this case, the code is duplicated between client and server, but it has the added benefit of being faster, relative to the loose coupling method.
+\item{Searching and establishing connection automatically to Offload Server}
 
-\subsection{The server - Linux Embedded System}
+\item{Handling of the lifecycle of the Bluetooth Low Energy socket}
 
-Because of the easy to use interface and availability of source code, the server is conceptualized on a Linux Operating System and uses the BlueZ\cite{BlueZ} open source Bluetooth stack. For connectivity, a Bluetooth 4.0 USB dongle is used. This permits a generality for the  system in the sense that it is not hardware specific - any Bluetooth chipset that abides to the standard can be used, even if it is directly embedded on the system, communicating through the UART interface, or through the USB protocol.
+\item{Notifications to the user of the smartphone when offloading is possible}
 
-In order to facilitate development, the server is written in the C language. The basic server functionality is handling Bluetooth connections and responding in an efficient way to requests from clients as decided in the protocol mention in section \ref{dataflow}.
+\item{An interface to developers through which they can perform offloading requests}
 
-The server starts off by advertising its availability using BLE Advertising\cite{BLE2} in connectable mode. This permits clients to automatically connect to the server and create an L2CAP socket that becomes available for use in transmitting and receiving data. After a connection is established, the server application waits a predefined period of time for clients to send a request header, that contains the type of offloading and data type that the client expects to receive after the invocation of the methods.
+\end{itemize}
 
-%In case of the loose coupled system, the server will load a Java Virtual Machine and will pass the serialized object to it, perform the calculations and send the results. In case of the procedure calls, the server will detain a list of methods or functions that can be called and will execute them when the request is received.
 
-%The server program is still a work in progress and the exact technologies and methodologies that will be used are to be determined after a series of performance tests.
+The offload service is present in the library offered to developers and has to be declared in the application manifest in order to be used (example in listing \ref{lst:manifest}). As well, any application that desires to the framework must declare that it needs permission for BLUETOOTH and BLUETOOTH_ADMIN. This represents all the changes needed in the configuration of the application.
+
+\pagebreak
+
+\lstset{language=xml,caption=Example Application Manifest,label=lst:manifest}
+\begin{lstlisting}
+	<uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
+	...
+	<application>
+	...
+		<service android:name="com.offloadingframework.offloadlibrary.OffloadService"/>
+	...
+    </application>
+\end{lstlisting}
+
+
+In order to start the service, the application needs to perform a request called "binding" to the Android system. The developer can choose to perform this action at application start up, when the needs arises or even permit the user to select when to perform offloading through settings or other similar methods.
+
+Once enabled, the service will start a low energy scan filtering for a specific Universally Unique Identifier (UUID) \abbrev{UUID}{Universally Unique Identifier}. This type of identifier is a standard used in software construction in order to enable distributed systems to uniquely identify information without significant central coordination. In Bluetooth Low Energy and normal Bluetooth, UUIDs are used, among other things, to uniquely determine services offered to other devices, such as the Gatt Service, HID service, etc.
+
+The 128-bit value UUID that is used by the BLEOffloading framework is shown in listing \ref{lst:uuid}.
+
+\lstset{language=java,caption=UUID used for discovery of Offloading Service, label=lst:uuid}
+\begin{lstlisting}
+private static UUID uuid = UUID.fromString("6686416b-aa45-798f-1747-680bd1c4a59b");
+\end{lstlisting}
+
+
+The offload service will perform low energy scans by default for 5 seconds at 10 seconds intervals. The developer can tailor these values by overriding the "offloading_ble_scan_interval" and "offloading_ble_scan_duration" properties of the library.
+
+Once an offloading server with the selected UUID is identified through scans, the service will interrogate the GATT service for its characteristics, identifying as such some information about the server, such as its location, its time and date and its availability. If the information provided proves agreeable (such as the availability of offloading services) then the offload service creates a RFCOMM socket to the server.
+
+The RFCOMM socket remains active as long as both devices are in range and periodically sends and receives at least a PING/ACK message. This type of message passed between the mobile phone and the server determines if the server can handle requests. If at any time an ACK message is missed the server is considered lost or out of range and the process of scanning is started anew. An example of the work the service is doing during in its initialization phase is given in figure \ref{img:offloadserviceinit}.
+
+\fig[scale=0.5]{src/img/OffloadServiceInit.png}{img:offloadserviceinit}{Actions started and managed by the OffloadService}
+
+
+Besides managing the connection the Offload Service provides a Message Thread that uses the already established Android Handler architecture in order to receive and send messages to the application. The handler works within the same thread as the service and provides methods designed for message passing and running methods at certain points in time. The ScanningRunnable and "PING/ACK Runnable" run using this handler and its \textit{postDelayed()} method. The \textit{postDealyed()} method allows the running of certain methods after an amount of time has passed. This is very helpful when you require the same task to be executed periodically.
+
+Another feature of the Android Handler system is message passing. Every application and service can have a Handler that runs on its main thread that listens to messages and takes certain actions when a message is received. The offload service handler uses these messages in order to provide an interface to the user application.
+
+In the context of BLEOffloadFramework, any request to the offload server is done through message passing to the OffloadService. For the task delegation offload method mentioned in section \ref{section:taskdelegation}, the application can send a message of a certain type, defined in the static class \textit{Contants} and register a Runnable callback in order to wait for the result. This class exposes a number of tasks that can be offloaded, with the certainty that these algorithms exist and can be run on the offload server.
+
+For the case of Data Binding solution, there is a special message type of message called \textbf{REQUEST_GENERAL_OFFLOAD} that will deliver to the offload service an OffloadRequest object that will be sent to the server. If the server accepts these types of requests, a callback with the result will be when offloading is done. The callback will receive a not available answer when offloading is not possible or the server does not accept that request.
+
+As previously stated, the communication between the offload service and the server is done through a RFCOMM socket managed by the client. In order to speed up the process, all the control messages sent through the socket are of the byte primitive type. All the user data is converted to byte form before sending, in a process called encoding. The server decodes the byte string that is sent through the channel and processes the request. All the results or responses sent back to the client are also encoded. This strategy permits the encoding and decoding process to also contain data archiving steps, thus minimizing the time it takes to transfer data across the RFCOMM channel.
+
+An example offloading call on a test application is present in appendix \ref{appendix:offloadclientexample}.
+
+\pagebreak
+
+\section{The server - Linux Embedded System}
+
+The offloading server has been designed with the possibility of running on multiple Linux based machines ranging from desktops to laptops or even other embedded devices such as Raspberry PI or MinnowBoard Max.
+
+The server must be Bluetooth Low Energy compatible and uses the open source BlueZ\cite{holtmann2007bluez} library as means for communication through Bluetooth. This library offers an API and a set of wrappers in order to manage and create Bluetooth connections, manage pairing requests and handle several Low Energy features such as advertising and scan filtering.
+
+The BLEOffloadingFramework server project is written in the C language and has the following structure described in figure \ref{img:serverstructure}:
+
+\fig[scale=0.5]{src/img/ServerStructure.png}{img:serverstructure}{The structure of the BLEOffloadingFramework Server}
+
+\begin{itemize}
+
+\item{Root - main.c server.c}
+	These files represent the starting point of the server program. Here, the main variables are initialized, checking is performed in order to see if Bluetooth can be enabled on the system and also contains the main loop that listens for connections and starts additional threads by request.
+
+\item{Communication API - comm}
+	In this directory there are wrappers for the BlueZ library, specifically for the starting of advertising technique with certain parameters, initialization of both LE Gatt Service and SDP service registering. This directory also contains the initialization of the RFCOMM sockets and the mutex synchronized methods for writing and reading from those sockets.
+
+\item{Auxiliary Programs - aux}
+	This directory contains the functions and programs required for the task delegation solution. Each algorithm is contained in its own file with a header file that describes it and the parameters it needs in order to be called.
+	
+\item{Third Party applications - third_party}
+	This folder contains a set of programs that should be called when the server initializes. These represent the programs needed for the data bingind of loose coupled systems offloading solution. Each program has its own sub-folder and needs to be registered in the server.c file mentioned above.
+	
+\item{Helper functions - other}
+	In this directory there are present some additional files that are needed in order to speed up the process, such as UUID transformations and encoding/decoding helper functions.
+
+\end{itemize}
+
+
+The server needs to be started with root privileges, as it relies on communication with the Bluetooth kernel module and needs access to the HCI device present on the machine. A special user can be created that has access to the Bluetooth subsystem and such avoid the risk of this server causing security concerns.
+
+When it first boots up, the offload server will try to set the parameters for advertising by calling through HCI the BT device present on the machine. If this is successful, it will then activate the advertising feature on the chipset with those specific parameters. After this phase, it will register a Low Energy GATT service that describes the services provided by the server through Bluetooth and also registers a new service with the Service Discovery Protocol (SDP) \abbrev{SDP}{Service Discovery Protocol}, a protocol used by classic Bluetooth in order to identify the capabilities of devices in a piconet. Examples of both these services are present in appendix \ref{appendix:gattservice} and appendix \ref{appendix:sdpservice}.
+
+After registering these services, the initialization of the RFCOMM socket is performed. This socket is set in the \textit{listen} state and we use the Linux \textit{select}\cite{ostrowski2000mechanism} mechanism in order to perceive new events on that socket. The \textit{select} mechanism "allows event monitoring on multiple file descriptors, waiting until one or more of the files descriptors become ready for some class of I/O operations"\footnote{select - Linux ManPages (the output of "man select" on any Linux system)}. As such, in the main loop of the server application a \textit{select} is performed on the rfcomm socket with a maximum number of "child" file descriptors for each subsequent client socket connected. The code behind this operation is described in Listing \ref{lst:servermainloop}.
+
+\lstset{language=c,caption=Main Loop of BLEOffloadingFramework server, label=lst:servermainloop}
+\begin{lstlisting}
+void start_main_loop_rfcomm(){
+    int result = -1;
+    int i = 0;
+    fd_set afds;
+    fd_set rfds;
+    struct timeval tv;
+    int clientRfSock;
+    struct sockaddr_rc rem_addr = {0};
+    socklen_t rfcommConnInfoLen;
+    socklen_t sockAddrLen;
+    bdaddr_t clientBdAddr;
+
+    printf("Starting main loop and listening for rfcomm sockets..\n");
+    while(1){
+        FD_ZERO(&afds);
+        FD_SET(rfcomm_socket, &afds);
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        result = select(FD_SETSIZE, &afds, NULL, NULL, &tv);
+        if(result < 0){
+          printf("select doesn't work.\n");
+          break;
+        }
+
+        for(i = 0; i < FD_SETSIZE; ++i)
+          if(FD_ISSET(i, &afds)){
+             if ( i == rfcomm_socket){
+                /*Connection Request on original socket */
+                sockAddrLen = sizeof(rem_addr);
+                clientRfSock = accept(rfcomm_socket, (struct sockaddr *) &rem_addr, &sockAddrLen);
+                if(clientRfSock < 0){
+                  printf("Error accepting a socket."); break;}
+                  FD_SET(clientRfSock, &afds);
+                }
+                else{
+                  /* If socket is not available do not read from it or handle requests */
+                  if(socket_available(i) == 0) continue;
+                  
+                  /*Data arriving on already connected socket*/
+                  char buffer[MAX_BUFFER_SIZE];
+                  
+                  mutex_lock(client_mutex(i));
+                  int read_bytes = read(i, buffer, MAX_BUFFER_SIZE);
+                  mutex_unlock(client_mutex(i))
+                  
+                  printf("%s\n", buffer);
+                  handle_request(i, buffer, read_bytes);
+                }
+          }
+          
+          clean_up_fds();
+        }
+}
+\end{lstlisting}
+
+
+Noteworthy is the \textit{handle_request()} near the end of the main loop, as this where the process of decoding and selecting the request happens. Once in this stage the stage, the server application decodes the received message and creates an appropriate response to the client.
+
+If it can handle the request then it will send a preemptive \textbf{ACCEPTED} message to the client, in order for it to prepare for the upcoming result. If in its featured database, which is actually a parsable XML file, the method request for offload does exist, then it will send a \textbf{REJECTED} message back to the client.
+
+After sending the \textbf{ACCEPTED} message, the server will launch a new thread that will serve as the processing environment for the offloaded task. That thread will use the thread safe socket write and read defined in \textit{comm/bluetooth.c} in order to transmit data back to the client.
+
+In the case of loose coupled systems, the server launches during its \textit{init} phase the programs that are coupled to it. These processes have to handle their own lifecycle and have to terminate when the parent process (the offload server) sends a SIGINT process signal. When a socket is opened with the request for that specific program, the socket is passed to the child process. 
+
+The child process must not close the socket, as it will cause a reconnect from the smartphone client, and the offload server must not use that specific socket once the request has been sent. This is done using a special mark on the RFCOMM socket that states that the socket is in use by another process. When the work is done on that socket, it will be marked as free by the child process and such the server can continue to receive other requests.
+
+Finally, after each socket iteration, a clean up is performed on the open file descriptors. This clean up is based on the fact that a socket has received updates in the last two minutes. If a socket has not been used in more that two minutes, it will be closed, thus freeing that file descriptor for future use.
+
+To note is the fact that the server does not take into account the type of device it receives updates from. It does not collect identification data of any kind and it acts mostly as a relay for other devices.
+
+A full iteration of the server logic is presented in Appendix \ref{appendix:offloadserverlogic}.
+
+
+
+
+
+
