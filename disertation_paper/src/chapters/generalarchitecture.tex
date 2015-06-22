@@ -1,7 +1,7 @@
 \chapter{General Architecture}
 \label{chapter:architecture}
 
-In order to obtain the maximum gain in a computational offloading system, it's components have to be designed with efficiency. This chapter presents the environment and data flow of the BLEOffloadingFramework and presents the motivation behind the design.
+In order to obtain the maximum gain in a computational offloading system, its components have to be designed with efficiency. This chapter presents the environment and data flow of the BLEOffloadingFramework and presents the motivation behind the design.
 
 \section{Offloading Agents}
 \label{agents}
@@ -20,11 +20,11 @@ When discussing code offloading or task delegation two roles can be defined for 
 
 \item{The computational device (The Server)}
 
-	As discussed in \ref{relatedwork}, recent studies and research papers have focused on using the new found Cloud Computing technology in order to handle this role. There are certain advantages provided by this infrastructure including availability of said service, a powerful processing model and the interchangeability of data \cite{kumar2010cloud}, but there are also disadvantages, namely in the fact that the connection used for data transferring may cause a bottleneck when offloading and thus creating a negative user experience.
+	As discussed in Section \ref{relatedwork}, recent studies and research papers have focused on using the new found Cloud Computing technology in order to handle this role. There are certain advantages provided by this infrastructure including availability of said service, a powerful processing model and the interchangeability of data \cite{kumar2010cloud}, but there are also disadvantages, namely in the fact that the connection used for data transferring may cause a bottleneck when offloading and thus creating a negative user experience.
 	
 	The BLEOffloadingFramework handles the disadvantages by considering an alternative communication link, which a shorter range, but with greater applicability in terms of gain and user experience. Thus, the computational device that the code is offloaded should be a device that is BLE enabled, but presents greater performance in terms of computing power. Types of devices that respect this condition range from Personal Computers with Bluetooth enabled to laptops or other similar machines.
 	
-	For the purpose of this paper, the computational device used in experimental results is another embedded device with the need of a constant energy source. The motivation behind this choice is to demonstrate that any computer like device can run an offloading server and help preserve the battery life of mobile devices.
+	For the purpose of this paper, the computational device used in experimental results is another embedded device with access to a constant energy source. The motivation behind this choice is to demonstrate that any device can run an offloading server and help preserve the battery life of mobile devices.
 
 \end{itemize}
 
@@ -37,19 +37,19 @@ When discussing code offloading or task delegation two roles can be defined for 
 	One of the objectives of this project is to determine several solutions for offloading and task delegation and provide a comparison between these methods. For the BLEOffloadingFramework two methods of code offloading are provided for developers and are described in the following sections.
 
 \subsection{Task delegation through Remote method invocation}
-\ref{section:taskdelegation}
+\label{section:taskdelegation}
 
 	Remote method invocation \cite{downing1998java} for the Java language, or remote procedure call for C/C++, is a model through which applications or programs can access and call methods or procedures that are stored on remote machines. The motivation behind these calls are numerous, from security concerns to availability of subroutines and data between machines.
 	
 	The generic model through which these calls are placed involve setting up a secure connection between the client and the server, transferring the proper method identification and parameters and waiting for the result of that method, a work flow similar to \ref{img:rmi}.
 	
-\fig[scale=0.3]{src/img/RMI.png}{img:rmi}{A generic work flow for Remote Method Invocation}
+\fig[scale=0.5]{src/img/RMI.png}{img:rmi}{A generic work flow for Remote Method Invocation}
 
-	In an offloading context, remote method invocation represents a way to delegate certain tasks to different machines, thus enabling applications to be more power efficient by not consuming a lot of CPU time. It does have a drawback through the fact that the method requires always online connectivity in order for it to work and produces quite a significant overhead.
+	In an offloading context, remote method invocation represents a way to delegate certain tasks to different machines, thus enabling applications to be more power efficient by not consuming a lot of CPU time. It does have a drawback through the fact that the method requires constant online connectivity in order for it to work and produces quite a significant overhead.
 	
 	In order to combat the disadvantages of the classical model, the framework proposed in this project follows a slightly different approach.
 	
-	When creating the application, the developer will note the methods or functions that he wishes to offload. These methods will be present both on the target application and on the offloading server. When offloading is possible in an application, the BLEOffloadingFramework client automatically detects the methods it can offload through this model and creates a request to the server in which it states the method identification and parameters. The server will either accept or reject the request based on its availability and the presence of said method in its database. An example work flow can be seen in \ref{img:tdtrmi}.
+	When creating the application, the developer will note the methods or functions that he wishes to offload. These methods will be present both on the target application and on the offloading server. When offloading is possible in an application, the BLEOffloadingFramework client automatically detects the methods it can offload through this model and creates a request to the server in which it states the method identification and parameters. The server will either accept or reject the request based on its availability and the presence of said method in its database. An example work flow can be seen in Figure \ref{img:tdtrmi}.
 	
 	Using this solution permits applications to run separately, in an offline context and only offloads when the right conditions are met. In the BLE framework, one goal is to offer developers a set of commonly used algorithms that can be used both on the client and server and provide the possibility to switch between client or server processing when the need arises, thus enabling programmers to create energy-efficient applications.
 	
@@ -57,7 +57,7 @@ When discussing code offloading or task delegation two roles can be defined for 
 
 \subsection{Data binding of loosed coupled systems}
 
-	Loosely coupled systems are by definition applications or programs in which all of their components have little or no knowledge of other separate components. The components in such applications communicate through message passing or similar interface based options, where it is not exclusive for one component to know the inner workings of the other. Examples of such applications include applications that rely on web content, where they make asynchronous REST (Representational State Transfer) API calls to web servers in order to obtain data, such as represented in figure \ref{img:loosecoupled}.
+	Loosely coupled systems are by definition applications or programs in which all of their components have little or no knowledge of other separate components. The components in such applications communicate through message passing or similar interface based options, where it is not exclusive for one component to know the inner workings of the other. Examples of such applications include applications that rely on web content, where they make asynchronous REST (Representational State Transfer) API calls to web servers in order to obtain data, such as represented in Figure \ref{img:loosecoupled}.
 	
 	
 \fig[scale=0.5]{src/img/LooseCoupled.png}{img:loosecoupled}{Example of a loose coupled application that makes a request to a remote web server}
@@ -68,8 +68,10 @@ This is different from method invocation because the component program that runs
 
 \fig[scale=0.5]{src/img/DataBinding.png}{img:databinding}{Example work flow for an application that uses Loose Coupling offloading method}
 
-In figure \ref{img:databinding} an example application that uses Loose Coupling offloading is presented. The application's purpose is to show pictures from a certain web server. As such, if offloading is possible it creates a special request to the server in order to see if a fetch picture component is present.
+In Figure \ref{img:databinding} an example application that uses Loose Coupling offloading is presented. The application's purpose is to show pictures from a certain web server. As such, if offloading is possible it creates a special request to the server in order to see if a fetch picture component is present.
 
 This component is a separate process that belongs to the server and periodically downloads and caches pictures from the applications web server. If the requested image is already cached in the system, then the process will return as a result that specific image. As such, the mobile application saves energy by bypassing the process of creating a Web API request to a remote server and waiting for the download action to complete.
 
-This method is suited for application that requires constant Internet connection for it's content, so that instead of always updating it will serve a cached version, which is much faster and in most cases, just as accurate.
+This method is suited for application that requires constant Internet connection for its content, so that instead of always updating it will serve a cached version, which is much faster and in most cases, just as accurate. 
+
+The BLEOffloadingFramework client that requires data binding can send a general type request to the server that will be identified and passed to a component program. In this case the developer that wishes to implement this method will have full control over the type and amount of data transferred between devices, leaving connection management and flow control over to the framework, thus providing a simple way to transfer large data over Bluetooth Low Energy.
