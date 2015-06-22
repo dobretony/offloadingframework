@@ -5,33 +5,33 @@ After defining the architecture of the BLEOffloadingFramework and how it is impl
 
 First off we have to define the terms used in calculating the gain through offloading. Let \(\Delta\tau\) be the gain of power resulted from using offloading instead of normal work on the current system. \(\Delta\tau\) is expressed in energy consumption over a specific time period and is defined as the energy consumption over a certain period of time required to perform a task (\(\tau_{local}\)) on a given machine minus the energy required on the same machine to send that task over to another machine and receive the result (\(\tau_{offload}\)). As such:
 
-\begin{align*}\label{gainequation}
+\begin{align}\label{gainequation}
 \delta\tau = \tau_{local} - \tau_{offloaded}
-\end{align*}
+\end{align}
 
 Both \(\tau_{local}\) and \(\tau_{offloaded}\) are experimental variables and should be expressed in the energy it took to perform a certain action over a period of time (this is the measurement of power). In order to calculate the gain in a more general fashion that does not depend on the device that it runs on, we will consider the amount of energy over time as being expressed in battery usage, a relative term used in smatphones and other similar devices to express the amount of battery power left in their devices. This variable is expressed in the percentage of energy left in the battery versus the energy contained in the battery at full capacity. In this case, \(\tau_{local}\) is expressed in the relative terms of:
 
-\begin{align*}
+\begin{align}
 \tau_{local} = \tfrac{Percentage\ of\ battery}{Period\ of\ time\ while\ task\ has\ run}
-\end{align*}
+\end{align}
 
 Because we expresses this in percentages, the calculations are not exact, but by repeating the task and ignoring the little overhead caused by the initialization of variables or stack calling, we can extend the period of time to a magnitude of hours. This permits us to show the larger impact upon the user with ease.
 
 In the same style, we have to define \(\tau_{offload}\) as:
 
-\begin{align*}
+\begin{align}
 \tau_{offload} = \tau_{BLEConnectionHandling} + \tau_{WaitPeriod} + \tau_{BLETransfer}
-\end{align*}
+\end{align}
 
-\begin{align*}
+\begin{align}
 \tau_{BLEConnectionHandling} = \tfrac{Percentage\ of\ battery}{The\ amount\ of\ time\ the\ connection\ is\ alive\ and\ is\ managed} 
-\end{align*}
-\begin{align*}
+\end{align}
+\begin{align}
 \tau_{WaitPeriod} = \tfrac{Percentage\ of\ battery}{The\ amount\ of\ wait\ time\ for\ offloading\ to\ be\ done} 
-\end{align*}
-\begin{align*}
+\end{align}
+\begin{align}
 \tau_{BLETransfer} = \tfrac{Percentage\ of\ battery}{The\ amount\ of\ time\ it\ takes\ for\ the\ data\ to\ be\ transferred}
-\end{align*}
+\end{align}
 
 With these notions in mind we will first explain the experimental setup with an example offloading scenario based on task delegation and afterwards determine the impact of the above variables in a comparison between methods.
 
