@@ -84,6 +84,10 @@ The offloading server has been designed with the possibility of running on multi
 
 The server must be Bluetooth Low Energy compatible and uses the open source BlueZ\cite{holtmann2007bluez} library as means for communication through Bluetooth. This library offers an API and a set of wrappers in order to manage and create Bluetooth connections, manage pairing requests and handle several Low Energy features such as advertising and scan filtering.
 
+
+\subsection{Server structure}
+\label{subsection:serverstructure}
+
 The BLEOffloadingFramework server project is written in the C language and has the following structure described in Figure \ref{img:serverstructure}:
 
 \fig[scale=0.5]{src/img/ServerStructure.png}{img:serverstructure}{The structure of the BLEOffloadingFramework Server}
@@ -107,6 +111,15 @@ The BLEOffloadingFramework server project is written in the C language and has t
 
 \end{itemize}
 
+This structure permits the organization of the server in a scalable way. Developers that want to add methods for Task delegation can do so by adding a C file and a C header file in the \textit{aux} folder. Afterwards they must add the type of request the server will send to the \textbf{handle_request()} function referenced in \textit{server.c} main file. 
+
+For the Data Binding through loose coupling method, a developer can add their binaries in the \textit{third_party} folder and add the same \textbf{handle_request()} logic as above.
+
+The project Makefile is created in such a way to include all the files from a specific folder and also add binaries from third parties in order to create a running executable. Additional libraries and functions that can be used as-is can be inserted inside a separate folder under \textit{third_party}.
+
+
+\subsection{Server logic}
+\label{subsection:serverlogic}
 
 The server needs to be started with root privileges, as it relies on communication with the Bluetooth kernel module and needs access to the HCI device present on the machine. A special user can be created that has access to the Bluetooth subsystem and such avoid the risk of this server causing security concerns.
 
@@ -127,8 +140,6 @@ The child process must not close the socket, as it will cause a reconnect from t
 Finally, after each socket iteration, a clean up is performed on the open file descriptors. This clean up is based on the fact that a socket has received updates in the last two minutes. If a socket has not been used in more that two minutes, it will be closed, thus freeing that file descriptor for future use.
 
 To note is the fact that the server does not take into account the type of device it receives updates from. It does not collect identification data of any kind and it acts mostly as a relay for other devices.
-
-A full iteration of the server logic is presented in Appendix \ref{appendix:offloadserverlogic}.
 
 
 

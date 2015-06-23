@@ -112,31 +112,6 @@ public class OffloadService extends Service {
                     BluetoothDevice device = result.getDevice();
                     handleSocket(device);
 
-                    /*
-                    device.fetchUuidsWithSdp();
-
-                    try {
-                        Log.d(LOG_NAME, "Found the device, now trying to connect to it through " + uuid.toString());
-
-                        offloadSocket = device.createInsecureRfcommSocketToServiceRecord(uuid);
-                        offloadSocket.connect();
-                        socketPrintWriter = new PrintWriter(offloadSocket.getOutputStream(), true);
-                        socketBufferedReader = new BufferedReader(new InputStreamReader(offloadSocket.getInputStream()));
-
-                    } catch (IOException e) {
-                        //e.printStackTrace();
-                        Log.e(LOG_NAME, "Could not connect to server.");
-                        foundServer = false;
-                        return;
-
-                    }
-
-                    Log.d(LOG_NAME, "Found server and succesfully connected to it.");
-                    foundServer = true;
-                    mServiceHandler.postDelayed(sanityCheckRunnable, PING_TIME);
-                    */
-
-
                 }
 
             }

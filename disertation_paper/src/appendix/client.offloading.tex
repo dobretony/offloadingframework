@@ -1,5 +1,212 @@
 \chapter{Example Client implementation and work flow of the BLEOffloadingFramework}
 \label{appendix:clientimplementation}
 
-% All this appendix uses make syntax
-%\lstset{language=make}
+
+\fig[scale=0.4]{src/img/applicationscreenshot.png}{img:sampleapplication}{The sample application main Activity.}
+
+In order to present the benefits of the BLEOffloadingFramework, a sample application has been constructed. This application is composed of a single Activity, presented in Figure \ref{img:sampleapplication}.
+
+This application, by default generates an image based on the Mandelbrot Set and shows this image on the screen. When the ToggleButton is set for offloading, the application requests the Bluetooth subsystem to start and also starts the OffloadService with an Intent call such as in Listing \ref{lst:startService}.
+
+\lstset{language=java,caption=Starting the OffloadService through an Intent,label=lst:startService}
+\begin{lstlisting}
+Intent intent = new Intent(this, OffloadService.class);
+startService(intent);
+\end{lstlisting}
+
+When the service receives the start intent, it will run an onStartCommand(), presented in Listing \ref{lst:onstartcommand}, that:
+
+\begin{enumerate}
+\item{Checks to see if Bluetooth is enabled and obtains a link to the BluetoothAdapter service.}
+\item{Starts a main service thread that remains active while the service is active.}
+\item{Instantiates a handler on the above thread.}
+\item{Obtains a reference to the Bluetooth Low Energy Scanner API.}
+\item{Starts the ScanRunnable thread.}
+\end{enumerate}
+
+\lstset{language=java,caption=onStartCommand() of OffloadService,label=lst:onstartcommand}
+\begin{lstlisting}
+@Override
+    public int onStartCommand(Intent intent, int flags, int startId){
+
+        mContext = getApplicationContext();
+        final BluetoothManager bluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = bluetoothManager.getAdapter();
+
+        Log.d(LOG_NAME, "Started Service.");
+
+        HandlerThread thread = new HandlerThread("ServiceStartArguments", Process.THREAD_PRIORITY_BACKGROUND);
+        thread.start();
+
+        mServiceLooper = thread.getLooper();
+        mServiceHandler = new OffloadServiceHandler(mServiceLooper);
+
+
+        Message msg = mServiceHandler.obtainMessage();
+        msg.arg1 = Constants.START_SCANNING;
+
+        if(Build.VERSION.SDK_INT >= 21) {
+            mLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
+            settings = new ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                    .build();
+            filters = new ArrayList<ScanFilter>();
+        }
+
+        mServiceHandler.sendMessage(msg);
+
+        return Service.START_NOT_STICKY;
+    }
+\end{lstlisting}
+
+The ScanRunnable object is called once 5 seconds and it's main function is to start and stop the scan for advertising packets from different sources. Once a server is found, a callback is called in order to register devices that are suitable offload servers. The code for this is presented in Listing \ref{lst:scanserver}.
+
+\lstset{language=java,caption=The ScanForServerRunnable and its callbacks,label=lst:scanserver}
+\begin{lstlisting}
+private Runnable scanForServerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            scanForServer();
+            mServiceHandler.postDelayed(this, SCAN_THREAD_DELAY);
+        }
+    };
+    
+public void scanForServer(){
+
+        if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()){
+            return;
+        }
+
+        //stop scanning if there already is a socket
+        if(offloadSocket != null && offloadSocket.isConnected())
+            return;
+
+        Log.d(LOG_NAME, "Started Scanning.");
+
+        mServiceHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (Build.VERSION.SDK_INT < 21) {
+                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                } else {
+                    mLEScanner.stopScan(mScanCallback);
+                }
+            }
+        }, 10000);
+
+
+        if(Build.VERSION.SDK_INT < 21){
+            mBluetoothAdapter.startLeScan(mLeScanCallback);
+        }else{
+            mLEScanner.startScan(mScanCallback);
+        }
+
+    }
+
+private ScanCallback mScanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                Log.d(LOG_NAME, "Found advertisement: " + result.toString());
+                if(foundServer) return;
+
+                ScanRecord record = result.getScanRecord();
+                SparseArray<byte[]> advPacket = record.getManufacturerSpecificData();
+
+                StringBuilder buffer = new StringBuilder();
+
+                for (int i = 0; i < advPacket.size(); i++) {
+                    for (byte b : advPacket.valueAt(i)) {
+                        buffer.append(String.format("%02X ", b));
+                    }
+                }
+
+                if(result.getDevice().getUuids() != null)
+                    for(int i = 0; i < result.getDevice().getUuids().length; i++){
+                        Log.e(LOG_NAME, "UUID: " + result.getDevice().getUuids()[i]);
+                    }
+
+                Log.d(LOG_NAME, "PACKET: " + buffer.toString());
+                if (buffer.toString().contains("48 45 4C 4C 4F 57 4F 52 4C")) {
+
+                    BluetoothDevice device = result.getDevice();
+                    handleSocket(device);
+                    
+                }
+
+            }
+
+            @Override
+            public void onBatchScanResults(List<ScanResult> results) {
+
+                for (ScanResult result : results) {
+
+                    Log.d(LOG_NAME, "Found advertisement in batch: " + result.toString());
+
+                    if(foundServer) return;
+
+                    ScanRecord record = result.getScanRecord();
+                    SparseArray<byte[]> advPacket = record.getManufacturerSpecificData();
+
+                    StringBuilder buffer = new StringBuilder();
+
+                    for (int i = 0; i < advPacket.size(); i++) {
+                        for (byte b : advPacket.valueAt(i)) {
+                            buffer.append(String.format("%02X ", b));
+                        }
+                    }
+
+                    Log.d(LOG_NAME, "PACKET: " + buffer.toString());
+                    if (buffer.toString().contains("48 45 4C 4C 4F 57 4F 52 4C")) {
+                        handleSocket(result.getDevice());
+                        return;
+                    }
+
+                }
+
+            }
+
+            @Override
+            public void onScanFailed(int errorCode) {
+                Log.d(LOG_NAME, "Scan failed.");
+                foundServer = false;
+            }
+        };
+
+\end{lstlisting}
+
+
+If a suitable server is found, then a call to the \textit{handleSocket()} method is performed, present in Listing \ref{lst:handleSocket}. In this method the main Input and Output objects are defined and a call to the PING/ACK runnbale is performed.
+
+
+\lstset{language=java,caption=The \textbf{handleSocket()} method,label=lst:handleSocket}
+\begin{lstlisting}
+public void handleSocket(BluetoothDevice device){
+
+        if(offloadSocket != null && offloadSocket.isConnected()){
+            return;
+        }
+
+        try {
+            offloadSocket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+            offloadSocket.connect();
+            socketPrintWriter = new PrintWriter(offloadSocket.getOutputStream(), true);
+            socketBufferedReader = new BufferedReader(new InputStreamReader(offloadSocket.getInputStream()));
+
+        } catch (IOException e) {
+            //e.printStackTrace();
+            Log.e(LOG_NAME, "Could not connect to server.");
+            foundServer = false;
+            return;
+
+        }
+
+		/*Present a notification to the user.*/
+        showNotification();
+        //set the variable used to check if a connection is available
+        foundServer = true;
+        
+        mServiceHandler.removeCallbacks(sanityCheckRunnable);
+        mServiceHandler.removeCallbacks(scanForServerRunnable);
+        
+    }
+\end{lstlisting}

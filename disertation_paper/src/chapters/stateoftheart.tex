@@ -17,9 +17,9 @@ Together with the specification of Bluetooth 4.0, Bluetooth SIG has also announc
 This standard also offers full backwards compatibility, as the added benefit of low-energy transmissions can be used in parallel with the normal Bluetooth 4.0 specification. This is applicable because BLE mainly relies on parameter configuration and short, but consistent, device discovery.
 
 In classic BT applications, when two devices needed to communicate they had to be set in Discoverable mode, identify each other and create a secure connection in a process referred to as pairing and then follow the specifications of certain Profiles. We can compare this wireless connection capability to the OSI stack, where instead of protocols, we have profiles that specify how to interact with different devices. For example, in order to connect to a Bluetooth enabled
-Mouse or keyboard and use its facilities the device needs to follow the guidelines of the Human Interface Device (HID) profile.
+Mouse or keyboard and use its facilities the device needs to follow the guidelines of the Human Interface Device (HID) profile. An example of the Bluetooth Low Energy stack can be seen in Figure \ref{img:bluetoothstack}.
 
-\todo{insert BLE stack picture here.}
+\fig[scale=0.5]{src/img/BluetoothStack.png}{img:bluetoothstack}{Bluetooth Low Energy Stack}
 
 Just as in classic Bluetooth\cite{haartsen2000bluetooth}, the BLE protocol stack consists of two main parts: The Host and the Controller. The Controller contains the Physical Layer and the Link Layer and is integrated on a small System on A Chip with radio capabilities. The Host part of BLE usually runs on an application processor (such as the processor in a mobile phone) and contains upper layers of functionality such as:
 
@@ -53,6 +53,14 @@ Even though the main drawback would be the small range of BLE, which is around 1
 Android is an operating system designed for smartphones, with a focus on usability, touch input and efficiency, both in power and computational abilities. It was first defined as a "software stack for mobile devices that includes an operating system, middleware and key applications" \cite{developers2011android}. Today, Android exists on numerous devices, including smart watches, TVs and even cars \cite{androidwiki}.
 
 This operating system is designed on top of a modified Linux Kernel\footnote{Linux Kernel - http://www.kernel.org} with a specific stack designed with user applications on the very top. This model permits the enabling of security protocols on the lower levels (closer to the hardware), while providing a feature rich environment for third party developers that deliver content to this specific ecosystem.
+
+Applications for the Android framework are created using a set of tools and helping methods called a Software Development Kit(SDK). Google, the maintainer of Android, offers this SDK in order for developers to create and maintain content for their smart phones. The SDK can also be augmented with an Integrated Development Environment(IDE)\abbrev{IDE}{Integrated Development Environment} that uses the tools offered in order to further simplify the work of developers.
+
+In the top tier of the Android architecture, two main components are of use for developers especially: the Activity and the Service classes. We mention these as classes, because all applications are based on the Software Development Kit, which is available in the Java language.
+
+The Activity class is the main component of an Android application and represents one or more windows that the user can interact with using input methods, be it touchscreen or keyboard and mouse. Activities run in the foreground of the system, have their own life cycle  and usually occupies the whole screen, offering the user content and information. An application can contain several Activities and they are organized in a stack fashion: unless specifically closed, the Activities are pushed in a stack, so that when the user is done with the top level activity, he can immediately have access to the previous activities by pressing the back button.
+
+The Service class represents a background process that can be created in order to offer support for applications. These classes do not have a user interface and are usually started when an Activity explicitly calls to activate the Service or when it performs an operation called Binding. Process Binding in Android represents a form of secure Inter-Process Communication(IPC) \abbrev{IPC}{Inter-Process Communication} between applications and services provided by the Android framework. The Service class is especially useful for the BLEOffloadingFramework, as the model for the offloading client is based on a background application that manages the Bluetooth Low Energy communication with the server.
 
 Because of the availability of this code, the plethora of devices it runs on an the simple interface that it provides, the BLEOffloadingFramework is constructed mainly for the Android Operating System.
 
