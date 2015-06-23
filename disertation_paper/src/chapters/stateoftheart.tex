@@ -21,19 +21,19 @@ Mouse or keyboard and use its facilities the device needs to follow the guidelin
 
 \fig[scale=0.5]{src/img/BluetoothStack.png}{img:bluetoothstack}{Bluetooth Low Energy Stack}
 
-Just as in classic Bluetooth\cite{haartsen2000bluetooth}, the BLE protocol stack consists of two main parts: The Host and the Controller. The Controller contains the Physical Layer and the Link Layer and is integrated on a small System on A Chip with radio capabilities. The Host part of BLE usually runs on an application processor (such as the processor in a mobile phone) and contains upper layers of functionality such as:
+Just as in classic Bluetooth\cite{haartsen2000bluetooth}, the BLE protocol stack is comprised of two main components: the Host and the Controller. The Controller component is usually a small piece of hardware, integrated on a System-on-a-Chip and contains  the Physical Layer, which controls wireless modulation, and the Link Layer. The Host component is comprised of several protocols, each working on top of each other:
 
 \begin{itemize}
 
-\item{Logical Link Control and Adaptation Protocol (L2CAP) - this layer is an optimized and simplified protocol based on the Bluetooth L2CAP, with the main goal of multiplexing data of other higher layer protocols.}
+\item{Logical Link Control and Adaptation Protocol (L2CAP) - \index{L2CAP}this layer is based on the Bluetooth BR/EDR L2CAP and its prime objective is to multiplex data of higher layer protocols}
 
-\item{Attribute Protocol (ATT)- this protocol defines the communication between two devices playing the role of client and server. The server maintains a set of attributes, where an attribute is a data structure with information managed by GATT. The client can access the server's attributes by sending requests, while the server responds with response messages. These type of messages follow a stop-and-wait scheme.}
+\item{Attribute Protocol (ATT)- \index{ATT}this protocol defines the communication between two devices, in a client-server architecture. On the server side, a set of data structures called attributes is maintained. The client has the ability to access and modify attributes through requests to the server.}
 
-\item{Generic Attribute Profile (GATT) - this profile defines a framework that uses the ATT for the discovery of services and the exchange of characteristics between devices. A characteristic can be defined by a set of items with values and properties.}
+\item{Generic Attribute Profile (GATT) - \index{GATT}this profile determines methods through which devices can perform discovery of services and reading/writing characteristics(a set of data comprised of values and properties).}
 
-\item{Security Manager Protocol (SMP) - BLE offers various security services for protecting information exchanged between devices, but most of the supported security services can be categorized in LE Security Mode 1 and LE Security Mode 2, which provide security at the Link Layer and ATT layer, respectively.}
+\item{Security Manager Protocol (SMP) - \index{SMP}This profile cannot be attributed to a specific place in the stack, as it represents the security standards that BLE has to adhere to. The main security modes that are present in BLE are called LE Security Mode 1 and LE Security Mode 2, which work on two separate layers: Link Layer and ATT layer.}
 
-\item{Generic Access Profile (GAP) - This profile specifies device roles, modes and procedures for the discovery of devices and services, the management of connection establishment and security.}
+\item{Generic Access Profile (GAP) - \index{GAP}This profile specifies the roles and procedures that the device has to adhere to in order to provide the discovery of services and the management of connections.}
 
 \end{itemize}
 
@@ -50,7 +50,7 @@ Even though the main drawback would be the small range of BLE, which is around 1
 \section{Android}
 \label{android}
 
-Android is an operating system designed for smartphones, with a focus on usability, touch input and efficiency, both in power and computational abilities. It was first defined as a "software stack for mobile devices that includes an operating system, middleware and key applications" \cite{developers2011android}. Today, Android exists on numerous devices, including smart watches, TVs and even cars \cite{androidwiki}.
+Android\index{Android} is an operating system designed for smartphones, with a focus on usability, touch input and efficiency, both in power and computational abilities. It was first defined as a "software stack for mobile devices that includes an operating system, middleware and key applications" \cite{developers2011android}. Today, Android exists on numerous devices, including smart watches, TVs and even cars \cite{androidwiki}.
 
 This operating system is designed on top of a modified Linux Kernel\footnote{Linux Kernel - http://www.kernel.org} with a specific stack designed with user applications on the very top. This model permits the enabling of security protocols on the lower levels (closer to the hardware), while providing a feature rich environment for third party developers that deliver content to this specific ecosystem.
 
@@ -58,9 +58,9 @@ Applications for the Android framework are created using a set of tools and help
 
 In the top tier of the Android architecture, two main components are of use for developers especially: the Activity and the Service classes. We mention these as classes, because all applications are based on the Software Development Kit, which is available in the Java language.
 
-The Activity class is the main component of an Android application and represents one or more windows that the user can interact with using input methods, be it touchscreen or keyboard and mouse. Activities run in the foreground of the system, have their own life cycle  and usually occupies the whole screen, offering the user content and information. An application can contain several Activities and they are organized in a stack fashion: unless specifically closed, the Activities are pushed in a stack, so that when the user is done with the top level activity, he can immediately have access to the previous activities by pressing the back button.
+The Activity\index{Android Activity} class is the main component of an Android application and represents one or more windows that the user can interact with using input methods, be it touchscreen or keyboard and mouse. Activities run in the foreground of the system, have their own life cycle  and usually occupies the whole screen, offering the user content and information. An application can contain several Activities and they are organized in a stack fashion: unless specifically closed, the Activities are pushed in a stack, so that when the user is done with the top level activity, he can immediately have access to the previous activities by pressing the back button.
 
-The Service class represents a background process that can be created in order to offer support for applications. These classes do not have a user interface and are usually started when an Activity explicitly calls to activate the Service or when it performs an operation called Binding. Process Binding in Android represents a form of secure Inter-Process Communication(IPC) \abbrev{IPC}{Inter-Process Communication} between applications and services provided by the Android framework. The Service class is especially useful for the BLEOffloadingFramework, as the model for the offloading client is based on a background application that manages the Bluetooth Low Energy communication with the server.
+The Service\index{Android Service} class represents a background process that can be created in order to offer support for applications. These classes do not have a user interface and are usually started when an Activity explicitly calls to activate the Service or when it performs an operation called Binding. Process Binding in Android represents a form of secure Inter-Process Communication(IPC) \abbrev{IPC}{Inter-Process Communication} between applications and services provided by the Android framework. The Service class is especially useful for the BLEOffloadingFramework, as the model for the offloading client is based on a background application that manages the Bluetooth Low Energy communication with the server.
 
 Because of the availability of this code, the plethora of devices it runs on an the simple interface that it provides, the BLEOffloadingFramework is constructed mainly for the Android Operating System.
 

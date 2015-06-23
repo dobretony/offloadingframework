@@ -8,9 +8,9 @@ With the scope of helping developers create power efficient applications through
 
 As previously state, Android is a mobile operating system tailored specifically for smartphones and other embedded devices, such as TVs or wearables, that offers a wide range of features for users and developers alike. In order to create an application for these devices, a developer may use the Software Development Kit (SDK) \abbrev{SDK}{Software Development Kit} that is offered for every version of Android.
 
-The BLEOffloadingFramework uses the Android SDK version 20 and upwards, as this API level has the features needed for effective Bluetooth Low Energy communication.
+The BLEOffloadingFramework uses the Android SDK version 20 and upwards, as this API level has the features needed for effective Bluetooth Low Energy communication.\index{Android SDK}
 
-Because we are discussing a system that is to be used by developers, one prime objective is to be modular: the framework must not interfere with the application and must be coupled or decoupled from the application with ease. The BLEOffloadingFramework presents itself as a Java library that developers can integrate into their application, without changing too much the actual code. This library contains a class called OffloadService, which is an Android Service that provides:
+Because we are discussing a system that is to be used by developers, one prime objective is to be modular: the framework must not interfere with the application and must be coupled or decoupled from the application with ease. The BLEOffloadingFramework presents itself as a Java library that developers can integrate into their application, without changing too much the actual code. This library contains a class called OffloadService\index{OffloadService}, which is an Android Service that provides:
 
 \begin{itemize}
 
@@ -47,7 +47,7 @@ In order to start the service, the application needs to perform a request called
 
 Once enabled, the service will start a low energy scan filtering for a specific Universally Unique Identifier (UUID) \abbrev{UUID}{Universally Unique Identifier}. This type of identifier is a standard used in software construction in order to enable distributed systems to uniquely identify information without significant central coordination. In Bluetooth Low Energy and normal Bluetooth, UUIDs are used, among other things, to uniquely determine services offered to other devices, such as the Gatt Service, HID service, etc.
 
-The 128-bit value UUID that is used by the BLEOffloading framework is shown in Listing \ref{lst:uuid}.
+The 128-bit value UUID that is used by the BLEOffloading framework\index{Offload Service UUID} is shown in Listing \ref{lst:uuid}.
 
 \lstset{language=java,caption=UUID used for discovery of Offloading Service, label=lst:uuid}
 \begin{lstlisting}
@@ -82,7 +82,7 @@ An example offloading call on a test application is present in appendix \ref{app
 
 The offloading server has been designed with the possibility of running on multiple Linux based machines ranging from desktops to laptops or even other embedded devices such as Raspberry PI or MinnowBoard Max.
 
-The server must be Bluetooth Low Energy compatible and uses the open source BlueZ\cite{holtmann2007bluez} library as means for communication through Bluetooth. This library offers an API and a set of wrappers in order to manage and create Bluetooth connections, manage pairing requests and handle several Low Energy features such as advertising and scan filtering.
+The server must be Bluetooth Low Energy compatible and uses the open source BlueZ\cite{holtmann2007bluez}\index{BlueZ} library as means for communication through Bluetooth. This library offers an API and a set of wrappers in order to manage and create Bluetooth connections, manage pairing requests and handle several Low Energy features such as advertising and scan filtering.
 
 
 \subsection{Server structure}
@@ -125,7 +125,7 @@ The server needs to be started with root privileges, as it relies on communicati
 
 When it first boots up, the offload server will try to set the parameters for advertising by calling through HCI the BT device present on the machine. If this is successful, it will then activate the advertising feature on the chipset with those specific parameters. After this phase, it will register a Low Energy GATT service that describes the services provided by the server through Bluetooth and also registers a new service with the Service Discovery Protocol (SDP) \abbrev{SDP}{Service Discovery Protocol}, a protocol used by classic Bluetooth in order to identify the capabilities of devices in a piconet.
 
-After registering these services, the initialization of the RFCOMM socket is performed. This socket is set in the \textit{listen} state and we use the Linux \textit{select}\cite{ostrowski2000mechanism} mechanism in order to perceive new events on that socket. The \textit{select} mechanism "allows event monitoring on multiple file descriptors, waiting until one or more of the files descriptors become ready for some class of I/O operations"\footnote{select - Linux ManPages (the output of "man select" on any Linux system)}. As such, in the main loop of the server application a \textit{select} is performed on the rfcomm socket with a maximum number of "child" file descriptors for each subsequent client socket connected. The code behind this operation is described in appendix \ref{appendix:servermainloop}.
+After registering these services, the initialization of the RFCOMM\index{RFCOMM} socket is performed. This socket is set in the \textit{listen} state and we use the Linux \textit{select}\cite{ostrowski2000mechanism} mechanism in order to perceive new events on that socket. The \textit{select} mechanism "allows event monitoring on multiple file descriptors, waiting until one or more of the files descriptors become ready for some class of I/O operations"\footnote{select - Linux ManPages (the output of "man select" on any Linux system)}. As such, in the main loop of the server application a \textit{select} is performed on the RFCOMM socket with a maximum number of "child" file descriptors for each subsequent client socket connected. The code behind this operation is described in appendix \ref{appendix:servermainloop}.
 
 Noteworthy is the \textit{handle_request()} near the end of the main loop, as this where the process of decoding and selecting the request happens. Once in this stage, the server application decodes the received message and creates an appropriate response to the client.
 
